@@ -95,6 +95,13 @@ dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; 
 .schritt label { display: flex; gap: 6px; align-items: center; } .warn { color: #b45309; }
 .knoepfe.unten { margin-top: 10px; border-top: 1px solid var(--rand); padding-top: 10px; } .knoepfe.unten select { width: auto; }
 .mailVorschau { white-space: pre-wrap; background: #fafafa; border: 1px solid var(--rand); border-radius: 8px; padding: 12px; font-family: inherit; font-size: 0.9rem; margin: 0; }
+.dokumente { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.dokumente li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 10px; background: #fafafa; }
+.dokumente .dokName { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--text); cursor: pointer; text-align: left; overflow-wrap: anywhere; flex: 1 1 200px; }
+.dokumente .dokName:hover { color: var(--rot-dunkel); text-decoration: underline; }
+.dokumente small { color: var(--grau); } .dokumente .knoepfe { gap: 6px; }
+.leerKlein { color: var(--grau); margin: 0 0 10px; } .dokHinweis { display: block; color: var(--grau); margin-top: 8px; }
+.klammer { font-size: 0.85rem; font-weight: 400; }
 .verlauf { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; } .verlauf small { color: var(--grau); margin-right: 8px; }
 
 @media (max-width: 800px) { .formular, .spalten { grid-template-columns: 1fr; } .kopf { padding: 10px 14px; } main { padding: 14px; } .tabelle { font-size: 0.85rem; } }

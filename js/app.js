@@ -81,7 +81,7 @@ function zeichneUebersicht() {
     </div>
     ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Retourennr.</th><th>Status</th><th></th></tr></thead><tbody>
       ${liste.map(r => { const s = statusInfo(r.status), a = ARTEN[artVon(r)];
-        return `<tr data-detail="${r.id}"><td><b>${esc(r.nummer)}</b></td><td title="${a.name}">${a.icon} ${a.kurz}</td><td>${datumDe(r.datum)}</td><td>${esc(lieferant(r.lieferant)?.name || "–")}</td>
+        return `<tr data-detail="${r.id}"><td><b>${esc(r.nummer)}</b>${r.anhaenge?.length ? ` <span class="klammer" title="${r.anhaenge.length} Dokument(e)">📎${r.anhaenge.length > 1 ? r.anhaenge.length : ""}</span>` : ""}</td><td title="${a.name}">${a.icon} ${a.kurz}</td><td>${datumDe(r.datum)}</td><td>${esc(lieferant(r.lieferant)?.name || "–")}</td>
           <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${esc(artVon(r) === "reparatur" ? r.kunde : r.retourennummer || r.kunde)}</td>
           <td><span class="status" style="--f:${s.farbe}">${s.icon} ${s.name}</span>${erinIds.has(r.id) ? ` <span class="alt">⏰</span>` : ""}</td>
           <td class="loeschZelle"><button type="button" class="knopf klein gefahr" data-loeschen="${r.id}" title="Löschen" aria-label="${esc(r.nummer)} löschen">🗑️</button></td></tr>`; }).join("")}
@@ -92,7 +92,7 @@ function zeichneUebersicht() {
     e.stopPropagation();
     const r = reklamation(b.dataset.loeschen); if (!r) return;
     if (!confirm(`${ARTEN[artVon(r)].name} ${r.nummer} wirklich löschen? Das geht nicht rückgängig.`)) return;
-    stand.reklamationen = stand.reklamationen.filter(x => x.id !== r.id); speichere(); meldung(`🗑️ ${r.nummer} gelöscht`); zeichneUebersicht();
+    dateienEntfernenVon(r); stand.reklamationen = stand.reklamationen.filter(x => x.id !== r.id); speichere(); meldung(`🗑️ ${r.nummer} gelöscht`); zeichneUebersicht();
   });
   for (const b of document.querySelectorAll("[data-filter]")) b.addEventListener("click", () => { filter = b.dataset.filter; zeichneUebersicht(); });
   $("bspLaden")?.addEventListener("click", () => { ladeBeispieldaten(); meldung("🧪 Beispieldaten geladen"); zeichne(); });
@@ -263,6 +263,13 @@ function zeichneDetail() {
           <select id="statusWahl"><option value="">Status direkt setzen …</option>${STATUS.filter(x => ablauf.includes(x.id) || ["abgelehnt", "erledigt"].includes(x.id)).map(x => `<option value="${x.id}">${x.icon} ${x.name}</option>`).join("")}</select></div>
       </section>
     </div>
+    <section class="karte"><h3>📎 Dokumente</h3>
+      ${r.anhaenge?.length ? `<ul class="dokumente">${r.anhaenge.map(a => `<li><button type="button" class="dokName" data-dokauf="${a.id}" title="Öffnen">📄 ${esc(a.name)}</button>
+        <small>${groesseText(a.groesse)} · ${new Date(a.zeit).toLocaleDateString("de-DE")}</small>
+        <span class="knoepfe"><button type="button" class="knopf klein" data-dokauf="${a.id}">👁️ Öffnen</button><button type="button" class="knopf klein" data-dokladen="${a.id}">⬇️ Herunterladen</button>
+        <button type="button" class="knopf klein gefahr" data-dokweg="${a.id}" aria-label="${esc(a.name)} löschen">🗑️</button></span></li>`).join("")}</ul>` : `<p class="leerKlein">Noch keine Dokumente.</p>`}
+      <label class="knopf"><input type="file" id="dokNeu" accept="application/pdf,.pdf" multiple hidden>➕ PDF hinzufügen</label>
+      <small class="dokHinweis">Die PDFs bleiben auf diesem Gerät. Zum Anhängen an die Outlook-Mail: herunterladen und in die Mail ziehen.</small></section>
     <section class="karte"><h3>✉️ Vorschau der E-Mail an den Lieferanten</h3><p><b>Betreff:</b> ${esc(m.betreff)}</p><pre class="mailVorschau">${esc(m.text)}</pre></section>
     <section class="karte"><h3>🕓 Verlauf</h3><ul class="verlauf">${r.verlauf.slice().reverse().map(v => `<li><small>${new Date(v.zeit).toLocaleString("de-DE")}</small> ${esc(v.text)}</li>`).join("")}</ul>
       <button type="button" class="knopf gefahr klein" id="loeschen">🗑️ Löschen</button></section>`;
@@ -283,9 +290,22 @@ function zeichneDetail() {
     setzeStatus(r, b.dataset.status, extra); zeichneDetail();
   });
   $("statusWahl").addEventListener("change", e => { if (e.target.value) { setzeStatus(r, e.target.value); zeichneDetail(); } });
+  $("dokNeu").addEventListener("change", async e => {
+    const dateien = [...e.target.files]; if (!dateien.length) return;
+    try { const n = await dateienHinzufuegen(r, dateien); if (n) meldung(`📎 ${n} Dokument${n > 1 ? "e" : ""} hinzugefügt`); }
+    catch (err) { meldung("Speichern ging nicht – ist der Speicher voll?", "fehler"); }
+    zeichneDetail();
+  });
+  for (const b of document.querySelectorAll("[data-dokauf]")) b.addEventListener("click", () => dateiOeffnen(b.dataset.dokauf));
+  for (const b of document.querySelectorAll("[data-dokladen]")) b.addEventListener("click", () => dateiHerunterladen(b.dataset.dokladen));
+  for (const b of document.querySelectorAll("[data-dokweg]")) b.addEventListener("click", async () => {
+    const a = (r.anhaenge || []).find(x => x.id === b.dataset.dokweg);
+    if (!a || !confirm(`„${a.name}“ löschen?`)) return;
+    await dateiEntfernen(r, a.id); meldung("🗑️ Dokument gelöscht"); zeichneDetail();
+  });
   $("loeschen").addEventListener("click", () => {
     if (!confirm(`${r.nummer} wirklich löschen?`)) return;
-    stand.reklamationen = stand.reklamationen.filter(x => x.id !== r.id); speichere(); meldung("🗑️ Gelöscht"); zeige("uebersicht");
+    dateienEntfernenVon(r); stand.reklamationen = stand.reklamationen.filter(x => x.id !== r.id); speichere(); meldung("🗑️ Gelöscht"); zeige("uebersicht");
   });
 }
 
@@ -353,7 +373,7 @@ function zeichneEinstellungen() {
       <p>Holt die neueste Version von Retourix. Deine Daten bleiben dabei erhalten.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="aktualisieren">🔄 Aktualisieren</button><small>Du hast <b>v${VERSION}</b></small></div></section>
     <section class="karte"><h3>💾 Datensicherung</h3>
-      <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
+      <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Die Sicherung enthält auch die PDF-Dokumente. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
       <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>`;
@@ -364,17 +384,20 @@ function zeichneEinstellungen() {
     speichere(); meldung("💾 Einstellungen gespeichert"); zeichne();
   });
   $("aktualisieren").addEventListener("click", aktualisiere);
-  $("export").addEventListener("click", () => {
+  $("export").addEventListener("click", async () => {
     stand.letzteSicherung = new Date().toISOString(); speichere();
-    ladeHerunter(`reklamationen-sicherung-${heute()}.json`, JSON.stringify(stand, null, 1), "application/json"); zeichneEinstellungen();
+    const dateien = await alleDateienFuerSicherung();
+    ladeHerunter(`retourix-sicherung-${heute()}.json`, JSON.stringify({ ...stand, dateien }, null, 1), "application/json"); zeichneEinstellungen();
   });
   $("import").addEventListener("change", async ev => {
     const datei = ev.target.files[0]; if (!datei) return;
     try {
       const d = JSON.parse(await datei.text());
       if (!Array.isArray(d.reklamationen) || !Array.isArray(d.lieferanten)) throw new Error();
-      if (!confirm(`Sicherung laden? ${d.reklamationen.length} Vorgänge und ${d.lieferanten.length} Lieferanten – die jetzigen Daten werden ersetzt.`)) return;
-      stand = { ...leererStand(), ...d, einstellungen: { ...leererStand().einstellungen, ...(d.einstellungen || {}) } }; speichere(); meldung("⬆️ Sicherung geladen"); zeige("uebersicht");
+      if (!confirm(`Sicherung laden? ${d.reklamationen.length} Vorgänge, ${d.lieferanten.length} Lieferanten${d.dateien?.length ? ` und ${d.dateien.length} Dokumente` : ""} – die jetzigen Daten werden ersetzt.`)) return;
+      const { dateien, ...rest } = d;
+      if (Array.isArray(dateien)) await dateienAusSicherung(dateien);
+      stand = { ...leererStand(), ...rest, einstellungen: { ...leererStand().einstellungen, ...(rest.einstellungen || {}) } }; speichere(); meldung("⬆️ Sicherung geladen"); zeige("uebersicht");
     } catch (e) { meldung("Das ist keine gültige Sicherungsdatei.", "fehler"); }
   });
   $("csv").addEventListener("click", () => {
@@ -392,7 +415,7 @@ async function aktualisiere() {
   try {
     const t = await (await fetch("js/daten.js", { cache: "reload" })).text();
     const neu = (t.match(/VERSION = "([^"]+)"/) || [])[1];
-    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/beispiel.js", "js/app.js", "manifest.json"]
+    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/beispiel.js", "js/dateien.js", "js/app.js", "manifest.json"]
       .map(d => fetch(d, { cache: "reload" }).catch(() => null)));
     if (neu && neu !== VERSION) { meldung(`✨ Neue Version ${neu} wird geladen …`); setTimeout(() => location.reload(), 900); }
     else { meldung(`✅ Retourix ist aktuell (v${VERSION})`); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren"; }
