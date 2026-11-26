@@ -239,6 +239,8 @@ function schrittInhalt(id, r, m) {
       const markieren = r.status === "neu" ? `<button type="button" class="knopf klein" data-status="gemeldet">✔ Als gemeldet markieren</button>` : "";
       if (istPortal(l)) return { titel: "Im Portal des Lieferanten melden", html: `<div class="knoepfe">${l.portalUrl ? `<a class="knopf haupt" id="portalOeffnen" href="${esc(portalLink(l.portalUrl))}" target="_blank" rel="noopener">🌐 Portal öffnen</a>` : ""}<button type="button" class="knopf" id="portalKopieren">📋 Alle Angaben kopieren</button></div>
         ${l.portalUrl ? "" : `<small class="warn">⚠️ Beim Lieferanten ist keine Portal-Adresse eingetragen.</small>`}${l.portalHinweis ? `<small>💡 ${esc(l.portalHinweis)}</small>` : ""}
+        ${l.portalBenutzer || l.portalKennwort ? `<div class="zugang">${l.portalBenutzer ? `<span>👤 <b>${esc(l.portalBenutzer)}</b> <button type="button" class="knopf klein" id="benutzerKopieren" title="Benutzer kopieren">📋</button></span>` : ""}
+          ${l.portalKennwort ? `<span>🔑 <b id="kwAnzeige">••••••••</b> <button type="button" class="knopf klein" id="kwAnsehen" title="Kennwort zeigen">👁️</button><button type="button" class="knopf klein" id="kwKopieren" title="Kennwort kopieren">📋</button></span>` : ""}</div>` : ""}
         <div class="zeile"><label>Vorgangsnr. im Portal <input id="portalNr" value="${esc(r.portalNr || "")}" placeholder="falls das Portal eine vergibt"></label><button type="button" class="knopf klein" id="portalNrSpeichern">💾</button></div>
         ${markieren}` };
       return { titel: "Beim Lieferanten melden", html: `${m.an ? `<div class="knoepfe"><a class="knopf haupt" id="mailOutlook" href="${esc(mailtoLink(m))}">✉️ E-Mail in Outlook öffnen</a><button type="button" class="knopf" id="mailKopieren">📋 Text kopieren</button></div>
@@ -307,6 +309,11 @@ function zeichneDetail() {
   $("mailOutlook")?.addEventListener("click", () => { if (r.status === "neu") { setzeStatus(r, "gemeldet", "E-Mail geöffnet"); setTimeout(zeichneDetail, 300); } });
   $("mailKopieren")?.addEventListener("click", () => kopiere(`${m.betreff}\n\n${m.text}`, "Betreff und Text"));
   const angaben = portalAngaben(r);
+  if (l) {
+    $("benutzerKopieren")?.addEventListener("click", () => kopiere(l.portalBenutzer, "Benutzer"));
+    $("kwKopieren")?.addEventListener("click", () => kopiere(l.portalKennwort, "Kennwort"));
+    $("kwAnsehen")?.addEventListener("click", () => { const a = $("kwAnzeige"); a.textContent = a.textContent.startsWith("•") ? l.portalKennwort : "••••••••"; });
+  }
   $("portalKopieren")?.addEventListener("click", () => kopiere(angaben.map(([k, w]) => `${k}: ${w}`).join("\n"), "Alle Angaben"));
   for (const b of document.querySelectorAll("[data-kopier]")) b.addEventListener("click", () => { const [k, w] = angaben[b.dataset.kopier]; kopiere(w, k); });
   $("portalNrSpeichern")?.addEventListener("click", () => { r.portalNr = $("portalNr").value.trim(); r.verlauf.push({ zeit: new Date().toISOString(), text: `Vorgangsnr. im Portal: ${r.portalNr || "–"}` }); speichere(); meldung("💾 Vorgangsnummer gespeichert"); zeichneDetail(); });
@@ -357,7 +364,10 @@ function zeichneLieferanten() {
         <label class="wahl"><input type="radio" name="meldeweg" value="portal" ${istPortal(l) ? "checked" : ""}> 🌐 über ein Portal im Internet</label></fieldset>
       <label class="nurEmail">E-Mail für Reklamationen<input name="email" type="email" value="${esc(l.email)}" placeholder="reklamation@lieferant.de"></label>
       <label class="nurPortal">Adresse des Portals<input name="portalUrl" value="${esc(l.portalUrl)}" placeholder="z. B. service.lieferant.de/reklamation" inputmode="url" autocomplete="off"></label>
-      <label class="nurPortal"><span>Hinweis zum Portal <small>(kein Passwort!)</small></span><input name="portalHinweis" value="${esc(l.portalHinweis)}" placeholder="z. B. Login mit Kundennummer, Menü „Service → Reklamation“"></label>
+      <label class="nurPortal">Benutzer<input name="portalBenutzer" value="${esc(l.portalBenutzer)}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label class="nurPortal">Kennwort<span class="kennwortZeile"><input name="portalKennwort" type="password" value="${esc(l.portalKennwort)}" autocomplete="new-password"><button type="button" class="knopf klein" id="kwZeigen" title="Kennwort zeigen">👁️</button></span></label>
+      <small class="nurPortal breit warn">🔒 Benutzer und Kennwort werden unverschlüsselt auf diesem Gerät gespeichert und stehen auch in der Sicherungsdatei. Gib das Gerät und Sicherungen nicht weiter.</small>
+      <label class="nurPortal">Hinweis zum Portal<input name="portalHinweis" value="${esc(l.portalHinweis)}" placeholder="z. B. Login mit Kundennummer, Menü „Service → Reklamation“"></label>
       <label>Ansprechpartner<input name="ansprechpartner" value="${esc(l.ansprechpartner)}" placeholder="z. B. Frau Müller"></label>
       <label><span>Abholhinweis <small>(statt Standard)</small></span><input name="abholhinweis" value="${esc(l.abholhinweis)}" placeholder="z. B. Abholung nur Di/Do durch Spedition XY"></label>
       <details class="breit nurEmail" open><summary><b>📦 Vorlage für Retouren</b></summary>
@@ -382,6 +392,7 @@ function zeichneLieferanten() {
   const zeigeMeldeweg = () => { const p = form.meldeweg.value === "portal"; form.classList.toggle("portalWeg", p); };
   for (const rb of form.querySelectorAll("[name=meldeweg]")) rb.addEventListener("change", zeigeMeldeweg);
   zeigeMeldeweg();
+  $("kwZeigen").addEventListener("click", () => { const k = form.portalKennwort; k.type = k.type === "password" ? "text" : "password"; });
   $("lAbbrechen").addEventListener("click", () => { bearbeiteLieferant = null; zeichneLieferanten(); });
   $("lStandard").addEventListener("click", () => {
     form.betreff.value = STANDARD_BETREFF; form.vorlage.value = STANDARD_TEXT; form.betreffReparatur.value = STANDARD_REP_BETREFF; form.vorlageReparatur.value = STANDARD_REP_TEXT;
