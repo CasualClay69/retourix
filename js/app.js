@@ -427,7 +427,10 @@ function zeichneEinstellungen() {
       <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Die Sicherung enthält auch die PDF-Dokumente. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
-      <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>`;
+      <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>
+    <section class="karte gefahrZone"><h3>⚠️ Alle Daten löschen</h3>
+      <p>Löscht <b>alles</b> auf diesem Gerät: alle Retouren und Reparaturen (auch offene), alle Lieferanten, alle PDF-Dokumente und die Einstellungen. Das geht nicht rückgängig – speichere vorher eine Sicherung, falls du die Daten noch brauchst.</p>
+      <button type="button" class="knopf gefahr" id="allesLoeschen">🗑️ Alle Daten löschen</button></section>`;
   $("eForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const f = Object.fromEntries(new FormData(ev.target).entries());
@@ -435,6 +438,14 @@ function zeichneEinstellungen() {
     speichere(); meldung("💾 Einstellungen gespeichert"); zeichne();
   });
   $("aktualisieren").addEventListener("click", aktualisiere);
+  $("allesLoeschen").addEventListener("click", async () => {
+    if (!confirm(`Wirklich ALLE Daten löschen?
+
+${stand.reklamationen.length} Vorgänge, ${stand.lieferanten.length} Lieferanten, alle PDF-Dokumente und die Einstellungen werden endgültig gelöscht.`)) return;
+    try { await dateiTx("readwrite", st => st.clear()); } catch (e) { /* kein Dokumentspeicher – egal */ }
+    stand = leererStand(); speichere();
+    meldung("🗑️ Alle Daten gelöscht"); zeige("uebersicht");
+  });
   $("aufraeumen").addEventListener("click", async () => {
     const weg = alteVorgaenge(); if (!weg.length) return;
     const dok = weg.reduce((n, r) => n + (r.anhaenge?.length || 0), 0);
