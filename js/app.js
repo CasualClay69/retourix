@@ -393,7 +393,7 @@ function zeichneEinstellungen() {
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
     <section class="karte"><h3>💾 Datensicherung</h3>
-      <p>Alle Daten liegen nur hier im Browser auf diesem PC. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
+      <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
       <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>
@@ -447,7 +447,7 @@ function start() {
   lade();
   for (const r of stand.reklamationen) if (!r.art) r.art = "artikel";   // ältere Einträge
   document.querySelector(".markeIcon").outerHTML = LOGO_SVG;
-  $("version").textContent = "v" + VERSION;
+  $("version").textContent = $("versionFuss").textContent = "v" + VERSION;
   document.title = `Retourix ${VERSION}`;
   const fav = document.createElement("link"); fav.rel = "icon"; fav.href = "data:image/svg+xml," + encodeURIComponent(LOGO_SVG.replace('class="logo" ', 'xmlns="http://www.w3.org/2000/svg" ')); document.head.append(fav);
   for (const b of document.querySelectorAll("#reiter button")) b.addEventListener("click", () => { bearbeiteLieferant = null; if (b.dataset.seite === "neu") neueArt = "artikel"; zeige(b.dataset.seite); });
