@@ -33,6 +33,28 @@ async function dateiTx(modus, arbeit) {
 
 const groesseText = b => (b >= 1048576 ? `${(b / 1048576).toFixed(1).replace(".", ",")} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
+// Datensatz für IndexedDB: verschlüsselt (nur id, vorgang, iv, daten – kein Name!) oder im Klartext
+async function dateiDatensatz(meta, blob, schluessel = krypto.schluessel) {
+  if (schluessel) { const { iv, daten } = await verschluesseln(schluessel, await blob.arrayBuffer()); return { id: meta.id, vorgang: meta.vorgang, enc: true, iv, daten }; }
+  return { id: meta.id, vorgang: meta.vorgang, name: meta.name, typ: meta.typ || "application/pdf", groesse: meta.groesse ?? blob.size, zeit: meta.zeit, blob };
+}
+// Name usw. eines Anhangs aus den (verschlüsselten) Vorgangsdaten
+function anhangInfo(id) { for (const r of stand.reklamationen) { const a = (r.anhaenge || []).find(x => x.id === id); if (a) return a; } return null; }
+// Datensatz lesen und ggf. entschlüsseln -> { id, vorgang, name, typ, groesse, zeit, blob }
+async function datensatzLesen(rec, schluessel = krypto.schluessel) {
+  if (!rec) return null;
+  if (!rec.enc) return rec;
+  const a = anhangInfo(rec.id) || {}, bytes = await entschluesseln(schluessel, rec.iv, rec.daten);
+  return { id: rec.id, vorgang: rec.vorgang, name: a.name || "Dokument.pdf", typ: "application/pdf", groesse: a.groesse ?? bytes.byteLength, zeit: a.zeit, blob: new Blob([bytes], { type: "application/pdf" }) };
+}
+// alle Dateien von einem Schlüssel auf einen anderen umstellen (null = Klartext)
+async function dateienUmschluesseln(alt, neu) {
+  let alle; try { alle = await dateiTx("readonly", s => s.getAll()) || []; } catch (e) { return; }
+  const neuListe = [];
+  for (const rec of alle) { const d = await datensatzLesen(rec, alt); neuListe.push(await dateiDatensatz(d, d.blob, neu)); }
+  if (neuListe.length) await dateiTx("readwrite", s => { for (const e of neuListe) s.put(e); });
+}
+
 // Datei(en) an einen Vorgang hängen
 async function dateienHinzufuegen(r, dateien) {
   let anzahl = 0;
@@ -40,7 +62,8 @@ async function dateienHinzufuegen(r, dateien) {
     if (!/pdf$/i.test(d.type) && !/\.pdf$/i.test(d.name)) { meldung(`„${d.name}“ ist keine PDF-Datei.`, "fehler"); continue; }
     if (d.size > MAX_DATEI_MB * 1048576) { meldung(`„${d.name}“ ist größer als ${MAX_DATEI_MB} MB.`, "fehler"); continue; }
     const eintrag = { id: neueId(), vorgang: r.id, name: d.name, typ: d.type || "application/pdf", groesse: d.size, zeit: new Date().toISOString() };
-    await dateiTx("readwrite", s => s.put({ ...eintrag, blob: d }));
+    const satz = await dateiDatensatz(eintrag, d);
+    await dateiTx("readwrite", s => s.put(satz));
     (r.anhaenge ||= []).push({ id: eintrag.id, name: eintrag.name, groesse: eintrag.groesse, zeit: eintrag.zeit });
     r.verlauf.push({ zeit: eintrag.zeit, text: `Dokument hinzugefügt: ${d.name}` });
     anzahl++;
@@ -48,7 +71,7 @@ async function dateienHinzufuegen(r, dateien) {
   if (anzahl) { speichere(); navigator.storage?.persist?.().catch(() => {}); }
   return anzahl;
 }
-const dateiHolen = id => dateiTx("readonly", s => s.get(id));
+const dateiHolen = async id => datensatzLesen(await dateiTx("readonly", s => s.get(id)));
 async function dateiEntfernen(r, id) {
   await dateiTx("readwrite", s => s.delete(id));
   const a = (r.anhaenge || []).find(x => x.id === id);
@@ -84,12 +107,12 @@ async function alleDateienFuerSicherung() {
     const alle = await dateiTx("readonly", s => s.getAll()) || [];
     const vorhanden = new Set(stand.reklamationen.map(r => r.id));
     const liste = [];
-    for (const d of alle) if (vorhanden.has(d.vorgang)) { const { blob, ...rest } = d; liste.push({ ...rest, daten: await blobZuText(blob) }); }
+    for (const rec of alle) if (vorhanden.has(rec.vorgang)) { const { blob, ...rest } = await datensatzLesen(rec); liste.push({ ...rest, daten: await blobZuText(blob) }); }
     return liste;
   } catch (e) { return []; }
 }
 async function dateienAusSicherung(liste) {
   const eintraege = [];
-  for (const d of liste) { const { daten, ...rest } = d; eintraege.push({ ...rest, blob: await (await fetch(daten)).blob() }); }
+  for (const d of liste) { const { daten, ...rest } = d; eintraege.push(await dateiDatensatz(rest, await (await fetch(daten)).blob())); }
   await dateiTx("readwrite", s => { s.clear(); for (const e of eintraege) s.put(e); });
 }

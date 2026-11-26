@@ -5,7 +5,7 @@
 //  Nichts wird ins Internet geschickt. Sicherung: Einstellungen → Daten speichern / laden.
 // =====================================================
 
-const VERSION = "3.7";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt · 2.5 Retoure: Retourennummer statt Kunde · 2.6 Reparatur: Gerät mit Art.-Nr./EAN, ohne Kassenbon/Abrechnung/Kostenlimit · 2.7 Drucken von Abhol-/Begleitschein und Aufklebern entfernt · 2.8 Reparaturnummer · 2.9 Reparaturnummer ist die Nummer (kein RP-Kürzel mehr) · 3.0 Löschen direkt in der Übersicht · 3.1 Strich in der Reparaturnummer tippbar · 3.2 PDF-Dokumente an Retouren/Reparaturen · 3.3 Aufräumen (alte erledigte Vorgänge löschen) · 3.4 Meldeweg Portal beim Lieferanten · 3.5 Alle Daten löschen · 3.6 Benutzer/Kennwort fürs Portal · 3.7 Retourennummer ist die Nummer (kein R-Kürzel mehr)
+const VERSION = "3.8";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt · 2.5 Retoure: Retourennummer statt Kunde · 2.6 Reparatur: Gerät mit Art.-Nr./EAN, ohne Kassenbon/Abrechnung/Kostenlimit · 2.7 Drucken von Abhol-/Begleitschein und Aufklebern entfernt · 2.8 Reparaturnummer · 2.9 Reparaturnummer ist die Nummer (kein RP-Kürzel mehr) · 3.0 Löschen direkt in der Übersicht · 3.1 Strich in der Reparaturnummer tippbar · 3.2 PDF-Dokumente an Retouren/Reparaturen · 3.3 Aufräumen (alte erledigte Vorgänge löschen) · 3.4 Meldeweg Portal beim Lieferanten · 3.5 Alle Daten löschen · 3.6 Benutzer/Kennwort fürs Portal · 3.7 Retourennummer ist die Nummer (kein R-Kürzel mehr) · 3.8 Verschlüsselung mit Kennwort
 const SPEICHER = "reklamation-daten-v1";
 
 // Zwei Arten: Retoure (Ware zurück an den Lieferanten) und Kunden-Reparaturauftrag (Gerät geht zur Reparatur und zurück zum Kunden)
@@ -104,13 +104,15 @@ function leererStand() {
 }
 let stand = leererStand();
 
+const standAus = d => ({ ...leererStand(), ...d, einstellungen: { ...leererStand().einstellungen, ...(d.einstellungen || {}) } });
 function lade() {
   try {
     const d = JSON.parse(localStorage.getItem(SPEICHER) || "null");
-    if (d && typeof d === "object") stand = { ...leererStand(), ...d, einstellungen: { ...leererStand().einstellungen, ...(d.einstellungen || {}) } };
+    if (d && typeof d === "object") stand = standAus(d);
   } catch (e) { /* kaputt -> leer anfangen */ }
 }
 function speichere() {
+  if (verschluesselt()) { tresorSchreiben(); return true; }   // verschlüsselt -> nur in den Tresor (krypto.js)
   try { localStorage.setItem(SPEICHER, JSON.stringify(stand)); return true; }
   catch (e) { meldung("⚠️ Speichern ging nicht – ist der Speicher voll?", "fehler"); return false; }
 }

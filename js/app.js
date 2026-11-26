@@ -426,6 +426,23 @@ function zeichneEinstellungen() {
       <label>Erinnern, wenn eine Reparatur länger als … Tage dauert<input name="reparaturTage" type="number" min="1" value="${esc(e.reparaturTage)}"></label>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
+    <section class="karte" id="kryptoKarte"><h3>🔒 Verschlüsselung</h3>
+      ${verschluesselt() ? `<p class="kryptoAn">✅ <b>Eingeschaltet.</b> Alle Daten, PDFs und Sicherungen sind mit deinem Kennwort verschlüsselt. Beim Start und nach ${AUTO_SPERRE_MIN} Minuten ohne Benutzung fragt Retourix nach dem Kennwort.</p>
+        <div class="knoepfe"><button type="button" class="knopf" id="jetztSperren">🔒 Jetzt sperren</button></div>
+        <details><summary><b>Kennwort ändern</b></summary><form id="kwAendern" class="kwForm">
+          <label>Bisheriges Kennwort<input type="password" name="alt" autocomplete="current-password" required></label>
+          <label>Neues Kennwort<input type="password" name="neu" autocomplete="new-password" required minlength="${KENNWORT_MIN}"></label>
+          <label>Neues Kennwort wiederholen<input type="password" name="neu2" autocomplete="new-password" required></label>
+          <button type="submit" class="knopf haupt">🔑 Kennwort ändern</button></form></details>
+        <details><summary><b>Verschlüsselung ausschalten</b></summary><form id="kwAus" class="kwForm">
+          <label>Kennwort<input type="password" name="kw" autocomplete="current-password" required></label>
+          <button type="submit" class="knopf gefahr">🔓 Verschlüsselung ausschalten</button></form></details>`
+      : `<p>Verschlüsselt alle Daten auf diesem Gerät mit einem Kennwort: Retouren, Reparaturen, Lieferanten mit Portal-Zugängen, PDF-Dokumente und die Sicherungsdatei. Beim Start und nach ${AUTO_SPERRE_MIN} Minuten ohne Benutzung fragt Retourix dann nach dem Kennwort.</p>
+        <p class="warn">⚠️ <b>Kennwort gut aufheben!</b> Wer es vergisst, kommt nie wieder an die Daten – auch nicht mit Hilfe.</p>
+        <form id="kwEin" class="kwForm">
+          <label>Kennwort <small>(mind. ${KENNWORT_MIN} Zeichen)</small><input type="password" name="neu" autocomplete="new-password" required minlength="${KENNWORT_MIN}"></label>
+          <label>Kennwort wiederholen<input type="password" name="neu2" autocomplete="new-password" required></label>
+          <button type="submit" class="knopf haupt">🔒 Verschlüsselung einschalten</button></form>`}</section>
     <section class="karte"><h3>🔄 Aktualisieren</h3>
       <p>Holt die neueste Version von Retourix. Deine Daten bleiben dabei erhalten.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="aktualisieren">🔄 Aktualisieren</button><small>Du hast <b>v${VERSION}</b></small></div></section>
@@ -434,7 +451,7 @@ function zeichneEinstellungen() {
       <div class="knoepfe"><button type="button" class="knopf gefahr" id="aufraeumen" ${alt.length ? "" : "disabled"}>🧹 ${alt.length ? `${alt.length} alte Vorgänge löschen` : "Nichts zum Aufräumen"}</button>
         ${alt.length ? `<small>${alt.length} Vorgänge${altDok ? ` · ${altDok} Dokument${altDok > 1 ? "e" : ""}` : ""}</small>` : ""}</div></section>
     <section class="karte"><h3>💾 Datensicherung</h3>
-      <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Die Sicherung enthält auch die PDF-Dokumente. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
+      <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Die Sicherung enthält auch die PDF-Dokumente${verschluesselt() ? " und ist mit deinem Kennwort verschlüsselt" : ""}. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
       <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>
@@ -448,6 +465,32 @@ function zeichneEinstellungen() {
     speichere(); meldung("💾 Einstellungen gespeichert"); zeichne();
   });
   $("aktualisieren").addEventListener("click", aktualisiere);
+  // ----- Verschlüsselung -----
+  const beschaeftigt = (form, an) => { for (const el of form.elements) el.disabled = an; };
+  $("jetztSperren")?.addEventListener("click", sperren);
+  $("kwEin")?.addEventListener("submit", async ev => {
+    ev.preventDefault(); const f = ev.target;
+    if (f.neu.value !== f.neu2.value) { meldung("Die beiden Kennwörter sind nicht gleich.", "fehler"); return; }
+    if (!confirm("Verschlüsselung jetzt einschalten?\n\nOhne das Kennwort kommst du danach nie wieder an die Daten. Hast du es dir sicher notiert?")) return;
+    beschaeftigt(f, true);
+    try { await verschluesselungEin(f.neu.value); meldung("🔒 Verschlüsselung eingeschaltet"); }
+    catch (e) { meldung("Das hat nicht geklappt – Daten sind unverändert.", "fehler"); }
+    zeichneEinstellungen(); $("sperrKnopf").hidden = !verschluesselt();
+  });
+  $("kwAendern")?.addEventListener("submit", async ev => {
+    ev.preventDefault(); const f = ev.target;
+    if (f.neu.value !== f.neu2.value) { meldung("Die beiden neuen Kennwörter sind nicht gleich.", "fehler"); return; }
+    beschaeftigt(f, true);
+    try { await kennwortAendern(f.alt.value, f.neu.value); meldung("🔑 Kennwort geändert"); zeichneEinstellungen(); }
+    catch (e) { beschaeftigt(f, false); meldung("Das bisherige Kennwort stimmt nicht.", "fehler"); }
+  });
+  $("kwAus")?.addEventListener("submit", async ev => {
+    ev.preventDefault(); const f = ev.target;
+    if (!confirm("Verschlüsselung ausschalten? Die Daten liegen danach wieder unverschlüsselt auf diesem Gerät.")) return;
+    beschaeftigt(f, true);
+    try { await verschluesselungAus(f.kw.value); meldung("🔓 Verschlüsselung ausgeschaltet"); zeichneEinstellungen(); $("sperrKnopf").hidden = true; }
+    catch (e) { beschaeftigt(f, false); meldung("Das Kennwort stimmt nicht.", "fehler"); }
+  });
   $("allesLoeschen").addEventListener("click", async () => {
     if (!confirm(`Wirklich ALLE Daten löschen?
 
@@ -467,18 +510,25 @@ ${stand.reklamationen.length} Vorgänge, ${stand.lieferanten.length} Lieferanten
   });
   $("export").addEventListener("click", async () => {
     stand.letzteSicherung = new Date().toISOString(); speichere();
-    const dateien = await alleDateienFuerSicherung();
-    ladeHerunter(`retourix-sicherung-${heute()}.json`, JSON.stringify({ ...stand, dateien }, null, 1), "application/json"); zeichneEinstellungen();
+    const dateien = await alleDateienFuerSicherung(), text = JSON.stringify({ ...stand, dateien }, null, 1);
+    if (verschluesselt()) ladeHerunter(`retourix-sicherung-${heute()}-verschluesselt.json`, JSON.stringify(await paketPacken(krypto.schluessel, krypto.salz, krypto.iter, text)), "application/json");
+    else ladeHerunter(`retourix-sicherung-${heute()}.json`, text, "application/json");
+    zeichneEinstellungen();
   });
   $("import").addEventListener("change", async ev => {
     const datei = ev.target.files[0]; if (!datei) return;
     try {
-      const d = JSON.parse(await datei.text());
+      let d = JSON.parse(await datei.text());
+      if (d.retourix === "verschluesselt") {
+        const kw = await kennwortAbfrage("🔒 Verschlüsselte Sicherung", "Gib das Kennwort ein, mit dem diese Sicherung gespeichert wurde.");
+        if (kw === null) { ev.target.value = ""; return; }
+        try { d = JSON.parse((await paketOeffnen(d, kw)).text); } catch (e) { meldung("Das Kennwort passt nicht zu dieser Sicherung.", "fehler"); ev.target.value = ""; return; }
+      }
       if (!Array.isArray(d.reklamationen) || !Array.isArray(d.lieferanten)) throw new Error();
       if (!confirm(`Sicherung laden? ${d.reklamationen.length} Vorgänge, ${d.lieferanten.length} Lieferanten${d.dateien?.length ? ` und ${d.dateien.length} Dokumente` : ""} – die jetzigen Daten werden ersetzt.`)) return;
       const { dateien, ...rest } = d;
       if (Array.isArray(dateien)) await dateienAusSicherung(dateien);
-      stand = { ...leererStand(), ...rest, einstellungen: { ...leererStand().einstellungen, ...(rest.einstellungen || {}) } }; speichere(); meldung("⬆️ Sicherung geladen"); zeige("uebersicht");
+      stand = standAus(rest); speichere(); meldung("⬆️ Sicherung geladen"); zeige("uebersicht");
     } catch (e) { meldung("Das ist keine gültige Sicherungsdatei.", "fehler"); }
   });
   $("csv").addEventListener("click", () => {
@@ -496,13 +546,49 @@ async function aktualisiere() {
   try {
     const t = await (await fetch("js/daten.js", { cache: "reload" })).text();
     const neu = (t.match(/VERSION = "([^"]+)"/) || [])[1];
-    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/beispiel.js", "js/dateien.js", "js/app.js", "manifest.json"]
+    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/krypto.js", "js/beispiel.js", "js/dateien.js", "js/app.js", "manifest.json"]
       .map(d => fetch(d, { cache: "reload" }).catch(() => null)));
     if (neu && neu !== VERSION) { meldung(`✨ Neue Version ${neu} wird geladen …`); setTimeout(() => location.reload(), 900); }
     else { meldung(`✅ Retourix ist aktuell (v${VERSION})`); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren"; }
   } catch (e) {
     meldung("Keine Verbindung – bitte später nochmal versuchen.", "fehler"); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren";
   }
+}
+// Kleine Kennwort-Abfrage (statt prompt, damit das Kennwort verdeckt bleibt). Ergebnis: Text oder null (Abbrechen)
+function kennwortAbfrage(titel, text) {
+  return new Promise(ok => {
+    const box = document.createElement("div"); box.className = "dialogHinter";
+    box.innerHTML = `<form class="dialog karte"><h3>${titel}</h3><p>${text}</p><input type="password" name="kw" autocomplete="current-password" required>
+      <div class="knoepfe"><button type="submit" class="knopf haupt">OK</button><button type="button" class="knopf" data-abbrechen>Abbrechen</button></div></form>`;
+    document.body.append(box);
+    const f = box.querySelector("form"), fertig = w => { box.remove(); ok(w); };
+    f.kw.focus();
+    f.addEventListener("submit", e => { e.preventDefault(); fertig(f.kw.value); });
+    box.querySelector("[data-abbrechen]").addEventListener("click", () => fertig(null));
+  });
+}
+function zeigeSperre() {
+  document.body.classList.add("gesperrt");
+  const s = $("sperre"); s.hidden = false;
+  s.innerHTML = `<form class="sperrKarte karte" id="sperrForm">${LOGO_SVG}<h2>Retourix ist gesperrt</h2>
+    <p>Gib dein Kennwort ein.</p><input type="password" name="kw" autocomplete="current-password" required autofocus>
+    <p class="sperrFehler" id="sperrFehler" hidden>❌ Falsches Kennwort.</p>
+    <button type="submit" class="knopf haupt gross">🔓 Entsperren</button>
+    <button type="button" class="vergessen" id="vergessen">Kennwort vergessen?</button></form>`;
+  const f = $("sperrForm"); f.kw.focus();
+  f.addEventListener("submit", async e => {
+    e.preventDefault(); const knopf = f.querySelector("[type=submit]");
+    knopf.disabled = true; knopf.textContent = "⏳ Prüfe …"; $("sperrFehler").hidden = true;
+    try { await entsperren(f.kw.value); s.hidden = true; s.innerHTML = ""; losGehts(); }
+    catch (err) { $("sperrFehler").hidden = false; knopf.disabled = false; knopf.textContent = "🔓 Entsperren"; f.kw.select(); }
+  });
+  $("vergessen").addEventListener("click", async () => {
+    if (!confirm("Ohne Kennwort lassen sich die Daten nicht entschlüsseln.\n\nDu kannst Retourix nur zurücksetzen: Dabei werden ALLE Daten auf diesem Gerät gelöscht. Danach kannst du eine (unverschlüsselte oder mit bekanntem Kennwort gespeicherte) Sicherung laden.\n\nRetourix jetzt zurücksetzen?")) return;
+    if (!confirm("Wirklich ALLES löschen? Das geht nicht rückgängig.")) return;
+    localStorage.removeItem(TRESOR); localStorage.removeItem(SPEICHER);
+    try { await dateiTx("readwrite", st => st.clear()); } catch (err) { /* egal */ }
+    location.reload();
+  });
 }
 function ladeHerunter(name, inhalt, typ) {
   const a = document.createElement("a");
@@ -517,14 +603,21 @@ const LOGO_SVG = `<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect
   <path d="M25 44V22H33.5A6.5 6.5 0 0 1 33.5 35H25M32 35L39.5 44" stroke="#fff" stroke-width="4.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 function start() {
-  lade();
-  for (const r of stand.reklamationen) if (!r.art) r.art = "artikel";   // ältere Einträge
   document.querySelector(".markeIcon").outerHTML = LOGO_SVG;
   $("version").textContent = $("versionFuss").textContent = "v" + VERSION;
   { const j = new Date().getFullYear(); $("jahr").textContent = j > 2026 ? `2026–${j}` : "2026"; }
   document.title = `Retourix ${VERSION}`;
   const fav = document.createElement("link"); fav.rel = "icon"; fav.href = "data:image/svg+xml," + encodeURIComponent(LOGO_SVG.replace('class="logo" ', 'xmlns="http://www.w3.org/2000/svg" ')); document.head.append(fav);
   for (const b of document.querySelectorAll("#reiter button")) b.addEventListener("click", () => { bearbeiteLieferant = null; if (b.dataset.seite === "neu") neueArt = "artikel"; zeige(b.dataset.seite); });
+  $("sperrKnopf").addEventListener("click", sperren);
+  if (tresorVorhanden()) zeigeSperre();   // verschlüsselt -> erst Kennwort
+  else { lade(); losGehts(); }
+}
+function losGehts() {
+  for (const r of stand.reklamationen) if (!r.art) r.art = "artikel";   // ältere Einträge
+  document.body.classList.remove("gesperrt");
+  $("sperrKnopf").hidden = !verschluesselt();
+  letzteAktivitaet = Date.now();
   zeichne();
 }
 document.addEventListener("DOMContentLoaded", start);

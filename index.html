@@ -16,13 +16,14 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/daten.js" defer></script>
+  <script src="js/krypto.js" defer></script>
   <script src="js/beispiel.js" defer></script>
   <script src="js/dateien.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body>
   <header class="kopf">
-    <div class="marke"><span class="markeIcon">📦</span><div><b>Retourix <span class="version" id="version"></span></b><small>Retouren &amp; Reparaturen</small></div></div>
+    <div class="marke"><span class="markeIcon">📦</span><div><b>Retourix <span class="version" id="version"></span> <button type="button" class="sperrKnopf" id="sperrKnopf" title="Sperren" aria-label="Retourix sperren" hidden>🔒</button></b><small>Retouren &amp; Reparaturen</small></div></div>
     <nav class="reiter" id="reiter">
       <button type="button" data-seite="uebersicht" class="an"><span>📋</span> Übersicht</button>
       <button type="button" data-seite="neu"><span>➕</span> Neu</button>
@@ -37,6 +38,9 @@
 
   <!-- Hinweis unten -->
   <div id="toast" class="toast" hidden></div>
+
+  <!-- Sperrbildschirm / Kennwort-Abfrage -->
+  <div id="sperre" class="sperre" hidden></div>
 
 </body>
 </html>

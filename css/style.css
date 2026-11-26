@@ -31,6 +31,20 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
   font: inherit; font-weight: 600; color: var(--text); cursor: pointer; text-decoration: none; }
 .knopf:hover { border-color: #c8ccd2; background: #fafafa; }
 .knopf.haupt { background: var(--rot); border-color: var(--rot); color: #fff; } .knopf.haupt:hover { background: var(--rot-dunkel); }
+/* ----- Verschlüsselung / Sperre ----- */
+body.gesperrt .kopf, body.gesperrt main, body.gesperrt .fuss { display: none; }
+[hidden] { display: none !important; }
+.sperre { position: fixed; inset: 0; z-index: 30; background: var(--hell); display: grid; place-items: center; padding: 16px; overflow: auto; }
+.sperrKarte { width: min(380px, 100%); display: grid; gap: 12px; justify-items: center; text-align: center; padding: 28px 22px; }
+.sperrKarte .logo { width: 72px; height: 72px; } .sperrKarte h2 { margin: 0; } .sperrKarte p { margin: 0; color: var(--grau); }
+.sperrKarte input { text-align: center; font-size: 1.1rem; } .sperrKarte .knopf { width: 100%; justify-content: center; }
+.sperrFehler { color: #b91c1c !important; font-weight: 600; }
+.vergessen { border: 0; background: none; color: var(--grau); text-decoration: underline; cursor: pointer; font: inherit; font-size: 0.85rem; }
+.sperrKnopf { border: 0; background: none; cursor: pointer; font-size: 0.95rem; padding: 0 2px; vertical-align: middle; }
+.kwForm { display: grid; gap: 10px; max-width: 420px; margin: 10px 0 4px; } .kwForm label { display: grid; gap: 4px; font-weight: 600; font-size: 0.9rem; }
+.kwForm .knopf { justify-self: start; } #kryptoKarte details { margin-top: 10px; } .kryptoAn { background: #ecfdf5; border-radius: 8px; padding: 10px; }
+.dialogHinter { position: fixed; inset: 0; z-index: 40; background: rgba(17, 24, 39, .45); display: grid; place-items: center; padding: 16px; }
+.dialog { width: min(420px, 100%); display: grid; gap: 10px; margin: 0; } .dialog h3, .dialog p { margin: 0; }
 .gefahrZone { border-color: #fecaca; background: #fffafa; }
 .knopf:disabled { opacity: .5; cursor: default; }
 .knopf.gefahr { color: #b91c1c; border-color: #fecaca; } .knopf.klein { padding: 5px 10px; font-size: 0.85rem; }
