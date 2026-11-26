@@ -49,6 +49,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
 .artWahl { display: inline-flex; margin-bottom: 14px; }
 .kundeBox { border: 1px solid var(--rand); border-radius: 10px; padding: 10px 14px 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 14px; background: #f8fafc; }
 .kundeBox legend { font-weight: 700; padding: 0 6px; } .kundeBox legend small { font-weight: 400; color: var(--grau); }
+.geraetBox { grid-template-columns: repeat(3, 1fr); } .geraetBox .ganz { grid-column: 1 / -1; }
 .artName { font-size: 0.85rem; color: var(--grau); font-weight: 600; }
 @media (max-width: 800px) { .neuKnoepfe, .kundeBox { grid-template-columns: 1fr; } }
 

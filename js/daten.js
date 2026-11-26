@@ -5,7 +5,7 @@
 //  Nichts wird ins Internet geschickt. Sicherung: Einstellungen → Daten speichern / laden.
 // =====================================================
 
-const VERSION = "2.5";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt · 2.5 Retoure: Retourennummer statt Kunde
+const VERSION = "2.6";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt · 2.5 Retoure: Retourennummer statt Kunde · 2.6 Reparatur: Gerät mit Art.-Nr./EAN, ohne Kassenbon/Abrechnung/Kostenlimit
 const SPEICHER = "reklamation-daten-v1";
 
 // Zwei Arten: Retoure (Ware zurück an den Lieferanten) und Kunden-Reparaturauftrag (Gerät geht zur Reparatur und zurück zum Kunden)
@@ -34,7 +34,6 @@ const ABLAUF = {
 };
 const FERTIG = ["erledigt", "abgelehnt", "ausgegeben"];
 const istOffen = r => !FERTIG.includes(r.status);
-const GARANTIE = ["Garantie / Gewährleistung", "Kulanz", "Kostenpflichtig"];
 
 // Platzhalter für die E-Mail-Vorlagen
 const PLATZHALTER = [
@@ -42,8 +41,8 @@ const PLATZHALTER = [
   ["{anrede}", "Anrede (Sehr geehrte Frau …/Herr … oder Damen und Herren)"], ["{positionen}", "Liste aller Artikel mit Menge"],
   ["{lieferschein}", "Lieferschein-/Rechnungsnummer"], ["{retourennummer}", "Retourennummer (Retoure)"], ["{fehler}", "Fehlerbeschreibung"], ["{pakete}", "Anzahl Pakete"],
   ["{gewicht}", "Gewicht in kg"], ["{abholhinweis}", "Abholzeiten / Hinweise"],
-  ["{geraet}", "Reparatur: Gerät (Artikelnr. und Bezeichnung)"], ["{seriennummer}", "Reparatur: Seriennummer"], ["{kaufdatum}", "Reparatur: Kaufdatum"],
-  ["{beleg}", "Reparatur: Kassenbon / Rechnung"], ["{garantie}", "Reparatur: Garantie / Kulanz / kostenpflichtig"], ["{kostenlimit}", "Reparatur: Kostenlimit"],
+  ["{geraet}", "Reparatur: Gerätebezeichnung"], ["{artikelnummer}", "Reparatur: unsere Artikelnummer"], ["{lieferantenartikelnr}", "Reparatur: Artikelnummer des Lieferanten"],
+  ["{ean}", "Reparatur: EAN"], ["{seriennummer}", "Reparatur: Seriennummer"], ["{kaufdatum}", "Reparatur: Kaufdatum"],
   ["{zubehoer}", "Reparatur: mitgegebenes Zubehör"], ["{kundenname}", "Name des Kunden (nur wenn du ihn mitschicken willst)"],
 ];
 
@@ -79,10 +78,11 @@ Auftragsnummer: {nummer}
 Unsere Kundennummer: {kundennummer}
 
 Gerät: {geraet}
+Unsere Artikelnummer: {artikelnummer}
+Ihre Artikelnummer: {lieferantenartikelnr}
+EAN: {ean}
 Seriennummer: {seriennummer}
-Kaufdatum: {kaufdatum} (Beleg: {beleg})
-Abrechnung: {garantie}
-Kostenlimit: {kostenlimit} – bei höheren Kosten bitte vorher einen Kostenvoranschlag
+Kaufdatum: {kaufdatum}
 Mitgegebenes Zubehör: {zubehoer}
 
 Fehlerbeschreibung:
@@ -91,6 +91,7 @@ Fehlerbeschreibung:
 Das Gerät steht bei uns zur Abholung bereit ({pakete} Paket(e), ca. {gewicht} kg).
 {abholhinweis}
 
+Falls die Reparatur kostenpflichtig ist, senden Sie uns bitte vorher einen Kostenvoranschlag.
 Bitte senden Sie das Gerät nach der Reparatur an uns zurück und geben Sie dabei unsere Auftragsnummer {nummer} an.
 
 Mit freundlichen Grüßen`;
