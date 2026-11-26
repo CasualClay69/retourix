@@ -19,18 +19,18 @@ function ladeBeispieldaten() {
   const verlauf = (...schritte) => schritte.map(([n, text]) => ({ zeit: tag(n), text }));
   const j = new Date().getFullYear();
   const R = [
-    { id: "bsp-r1", art: "artikel", nummer: `R-${j}-0901`, datum: d(1), lieferant: "bsp-l1", kunde: "", lieferschein: "LS 884512",
+    { id: "bsp-r1", art: "artikel", nummer: `R-${j}-0901`, datum: d(1), lieferant: "bsp-l1", retourennummer: "13300048211", lieferschein: "LS 884512",
       positionen: [{ artikelnummer: "4711001", bezeichnung: "Akku-Bohrschrauber 18 V", menge: 3 }], fehler: "Gehäuse bei Anlieferung gebrochen (Transportschaden).",
       pakete: 1, gewicht: "6", notiz: "", status: "neu", statusSeit: tag(1), erstellt: tag(1), verlauf: verlauf([1, "Erfasst"]) },
-    { id: "bsp-r2", art: "artikel", nummer: `R-${j}-0902`, datum: d(12), lieferant: "bsp-l3", kunde: "Frau Beispiel", lieferschein: "RE 2024-5520",
+    { id: "bsp-r2", art: "artikel", nummer: `R-${j}-0902`, datum: d(12), lieferant: "bsp-l3", retourennummer: "13300048107", lieferschein: "RE 2024-5520",
       positionen: [{ artikelnummer: "5520300", bezeichnung: "Wandfarbe weiß 10 l", menge: 4 }, { artikelnummer: "5520310", bezeichnung: "Wandfarbe weiß 5 l", menge: 2 }],
       fehler: "Farbe klumpig, Charge 23-118.", pakete: 2, gewicht: "70", notiz: "Kundin hat Ersatz bekommen.", status: "gemeldet", statusSeit: tag(10), erstellt: tag(12),
       verlauf: verlauf([12, "Erfasst"], [10, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"]) },
-    { id: "bsp-r3", art: "artikel", nummer: `R-${j}-0903`, datum: d(6), lieferant: "bsp-l2", kunde: "", lieferschein: "LS 77120",
+    { id: "bsp-r3", art: "artikel", nummer: `R-${j}-0903`, datum: d(6), lieferant: "bsp-l2", retourennummer: "13300048156", lieferschein: "LS 77120",
       positionen: [{ artikelnummer: "6610045", bezeichnung: "Gartenschlauch 25 m", menge: 10 }], fehler: "Schläuche undicht an der Kupplung.",
       pakete: 1, gewicht: "18", notiz: "", status: "abholung", abholtermin: d(-2), statusSeit: tag(3), erstellt: tag(6),
       verlauf: verlauf([6, "Erfasst"], [5, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"], [3, `Status: Abholung geplant`]) },
-    { id: "bsp-r4", art: "artikel", nummer: `R-${j}-0880`, datum: d(30), lieferant: "bsp-l1", kunde: "", lieferschein: "LS 870001",
+    { id: "bsp-r4", art: "artikel", nummer: `R-${j}-0880`, datum: d(30), lieferant: "bsp-l1", retourennummer: "13300047730", lieferschein: "LS 870001",
       positionen: [{ artikelnummer: "4711230", bezeichnung: "Stichsäge 650 W", menge: 1 }], fehler: "Hubstange blockiert.",
       pakete: 1, gewicht: "3", notiz: "", status: "erledigt", gutschrift: "Gutschrift GS-55120, 59,99 €", statusSeit: tag(4), erstellt: tag(30),
       verlauf: verlauf([30, "Erfasst"], [29, "Status: Beim Lieferanten gemeldet"], [22, "Status: Abgeholt"], [6, "Status: Gutschrift / Ersatz erhalten – Gutschrift GS-55120, 59,99 €"], [4, "Status: Erledigt"]) },
