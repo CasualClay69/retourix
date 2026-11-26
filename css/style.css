@@ -103,6 +103,12 @@ dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; 
 .dokumente small { color: var(--grau); } .dokumente .knoepfe { gap: 6px; }
 .leerKlein { color: var(--grau); margin: 0 0 10px; } .dokHinweis { display: block; color: var(--grau); margin-top: 8px; }
 .klammer { font-size: 0.85rem; font-weight: 400; }
+.meldeweg { border: 1px solid var(--rand); border-radius: 10px; padding: 8px 14px 12px; display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.meldeweg legend { font-weight: 700; padding: 0 6px; font-size: 0.9rem; }
+.formular .meldeweg .wahl { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; } .meldeweg input { width: auto; }
+.formular .nurPortal { display: none; } .formular .knopf.nurEmail { display: inline-flex; } .formular.portalWeg .knopf.nurEmail { display: none; } .formular.portalWeg .nurPortal { display: grid; } .formular.portalWeg .nurEmail { display: none; }
+.portalTab { width: 100%; border-collapse: collapse; } .portalTab th, .portalTab td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #f1f2f4; vertical-align: top; }
+.portalTab th { color: var(--grau); font-weight: 600; width: 34%; } .portalTab td:last-child { width: 1%; text-align: right; }
 .verlauf { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 4px; } .verlauf small { color: var(--grau); margin-right: 8px; }
 
 @media (max-width: 800px) { .formular, .spalten { grid-template-columns: 1fr; } .kopf { padding: 10px 14px; } main { padding: 14px; } .tabelle { font-size: 0.85rem; } }

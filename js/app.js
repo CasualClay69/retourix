@@ -64,7 +64,7 @@ function zeichneUebersicht() {
   const liste = stand.reklamationen
     .filter(r => artFilter === "alle" || artVon(r) === artFilter)
     .filter(r => filter === "alle" || (filter === "offen" ? istOffen(r) : !istOffen(r)))
-    .filter(r => !suche || JSON.stringify([r.nummer, r.retourennummer, r.reparaturnummer, (r.positionen || []).map(p => [p.lieferantNr, p.ean]), r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer, r.fehler, r.positionen, lieferant(r.lieferant)?.name]).toLowerCase().includes(suche.toLowerCase()))
+    .filter(r => !suche || JSON.stringify([r.nummer, r.portalNr, r.retourennummer, r.reparaturnummer, (r.positionen || []).map(p => [p.lieferantNr, p.ean]), r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer, r.fehler, r.positionen, lieferant(r.lieferant)?.name]).toLowerCase().includes(suche.toLowerCase()))
     .sort((a, b) => (b.erstellt || "").localeCompare(a.erstellt || ""));
   $("inhalt").innerHTML = `
     ${!stand.lieferanten.length ? `<div class="hinweisBox">👋 Willkommen! Lege zuerst unter <a href="#" data-geh="lieferanten">🏭 Lieferanten</a> deine Lieferanten an.<div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf klein" id="bspLaden">🧪 Erst mal ausprobieren: Beispieldaten laden</button></div></div>` : ""}
@@ -201,6 +201,24 @@ function mailFuer(r) {
     betreff: fuelleVorlage((rep ? l.betreffReparatur : l.betreff) || (rep ? STANDARD_REP_BETREFF : STANDARD_BETREFF), r),
     text: fuelleVorlage((rep ? l.vorlageReparatur : l.vorlage) || (rep ? STANDARD_REP_TEXT : STANDARD_TEXT), r) };
 }
+// Meldeweg des Lieferanten: "email" (Standard) oder "portal"
+const istPortal = l => l?.meldeweg === "portal";
+const portalLink = u => (!u ? "" : /^https?:\/\//i.test(u) ? u : `https://${u}`);
+// Die wichtigsten Angaben einzeln – zum Abtippen/Kopieren ins Portal des Lieferanten
+function portalAngaben(r) {
+  const l = lieferant(r.lieferant) || {}, g = (r.positionen || [])[0] || {}, rep = artVon(r) === "reparatur";
+  const z = rep ? [
+    ["Unsere Kundennummer", l.kundennummer], ["Reparaturnummer", r.nummer], ["Gerät", g.bezeichnung], ["Unsere Artikelnummer", g.artikelnummer],
+    ["Ihre Artikelnummer", g.lieferantNr], ["EAN", g.ean], ["Seriennummer", r.seriennummer], ["Kaufdatum", r.kaufdatum ? datumDe(r.kaufdatum) : ""],
+    ["Zubehör", r.zubehoer], ["Fehlerbeschreibung", r.fehler],
+  ] : [
+    ["Unsere Kundennummer", l.kundennummer], ["Reklamationsnummer", r.nummer], ["Retourennummer", r.retourennummer], ["Lieferschein / Rechnung", r.lieferschein],
+    ...(r.positionen || []).map((p, i) => [`Artikel ${(r.positionen.length > 1) ? i + 1 : ""}`.trim(), `${p.menge} × ${p.artikelnummer ? `${p.artikelnummer} ` : ""}${p.bezeichnung}`]),
+    ["Fehlerbeschreibung", r.fehler],
+  ];
+  z.push(["Pakete / Gewicht", `${r.pakete || 1} Paket(e)${r.gewicht ? `, ca. ${r.gewicht} kg` : ""}`]);
+  return z.filter(([, w]) => w);
+}
 const mailtoLink = m => `mailto:${encodeURIComponent(m.an).replace(/%40/g, "@").replace(/%2C/g, ",")}?${[m.cc && `cc=${encodeURIComponent(m.cc)}`, `subject=${encodeURIComponent(m.betreff)}`, `body=${encodeURIComponent(m.text.replace(/\r?\n/g, "\r\n"))}`].filter(Boolean).join("&")}`;
 async function kopiere(text, was) {
   try { await navigator.clipboard.writeText(text); meldung(`📋 ${was} kopiert`); } catch (e) { meldung("Kopieren ging nicht – markiere den Text in der Vorschau.", "fehler"); }
@@ -216,9 +234,17 @@ function setzeStatus(r, neu, extra = "") {
 function schrittInhalt(id, r, m) {
   const rep = artVon(r) === "reparatur";
   switch (id) {
-    case "gemeldet": return { titel: "Beim Lieferanten melden", html: `${m.an ? `<div class="knoepfe"><a class="knopf haupt" id="mailOutlook" href="${esc(mailtoLink(m))}">✉️ E-Mail in Outlook öffnen</a><button type="button" class="knopf" id="mailKopieren">📋 Text kopieren</button></div>
-        <small>An: ${esc(m.an)}${m.cc ? ` · CC: ${esc(m.cc)}` : ""} · Fotos hängst du in Outlook an.</small>` : `<small class="warn">⚠️ Beim Lieferanten ist keine E-Mail-Adresse eingetragen.</small>`}
-        ${r.status === "neu" ? `<button type="button" class="knopf klein" data-status="gemeldet">✔ Als gemeldet markieren</button>` : ""}` };
+    case "gemeldet": {
+      const l = lieferant(r.lieferant) || {};
+      const markieren = r.status === "neu" ? `<button type="button" class="knopf klein" data-status="gemeldet">✔ Als gemeldet markieren</button>` : "";
+      if (istPortal(l)) return { titel: "Im Portal des Lieferanten melden", html: `<div class="knoepfe">${l.portalUrl ? `<a class="knopf haupt" id="portalOeffnen" href="${esc(portalLink(l.portalUrl))}" target="_blank" rel="noopener">🌐 Portal öffnen</a>` : ""}<button type="button" class="knopf" id="portalKopieren">📋 Alle Angaben kopieren</button></div>
+        ${l.portalUrl ? "" : `<small class="warn">⚠️ Beim Lieferanten ist keine Portal-Adresse eingetragen.</small>`}${l.portalHinweis ? `<small>💡 ${esc(l.portalHinweis)}</small>` : ""}
+        <div class="zeile"><label>Vorgangsnr. im Portal <input id="portalNr" value="${esc(r.portalNr || "")}" placeholder="falls das Portal eine vergibt"></label><button type="button" class="knopf klein" id="portalNrSpeichern">💾</button></div>
+        ${markieren}` };
+      return { titel: "Beim Lieferanten melden", html: `${m.an ? `<div class="knoepfe"><a class="knopf haupt" id="mailOutlook" href="${esc(mailtoLink(m))}">✉️ E-Mail in Outlook öffnen</a><button type="button" class="knopf" id="mailKopieren">📋 Text kopieren</button></div>
+        <small>An: ${esc(m.an)} · Fotos hängst du in Outlook an.</small>` : `<small class="warn">⚠️ Beim Lieferanten ist keine E-Mail-Adresse eingetragen.</small>`}
+        ${markieren}` };
+    }
     case "abholung": return { titel: "Abholung vorbereiten", html: `<div class="zeile"><label>Abholtermin <input type="date" id="abholtermin" value="${esc(r.abholtermin || "")}"></label><button type="button" class="knopf klein" id="terminSpeichern">📅 Termin eintragen</button></div>` };
     case "abgeholt": return { titel: "Abgeholt", html: `<button type="button" class="knopf klein" data-status="abgeholt">🚚 ${rep ? "Gerät" : "Ware"} wurde abgeholt</button>` };
     case "gutschrift": return { titel: "Gutschrift / Ersatz", html: `<div class="zeile"><input id="gutschriftText" placeholder="z. B. Gutschrift GS-123, 49,90 €" value="${esc(r.gutschrift || "")}"><button type="button" class="knopf klein" data-status="gutschrift">💶 Erhalten</button></div>` };
@@ -254,6 +280,7 @@ function zeichneDetail() {
           <dt>Seriennummer</dt><dd>${esc(r.seriennummer || "–")}</dd><dt>Kaufdatum</dt><dd>${r.kaufdatum ? datumDe(r.kaufdatum) : "–"}</dd><dt>Zubehör</dt><dd>${esc(r.zubehoer || "keins")}</dd>
           ${r.kva ? `<dt>Kosten&shy;voranschlag</dt><dd>${esc(r.kva)}${r.kvaAntwort ? ` – ${esc(r.kvaAntwort)}` : ""}</dd>` : ""}`
         : `<dt>Lieferschein</dt><dd>${esc(r.lieferschein || "–")}</dd>`}
+        ${r.portalNr ? `<dt>Vorgangsnr. Portal</dt><dd>${esc(r.portalNr)}</dd>` : ""}
         <dt>Pakete / Gewicht</dt><dd>${esc(r.pakete || 1)} / ${esc(r.gewicht || "–")} kg</dd>
         ${r.abholtermin ? `<dt>Abholtermin</dt><dd><b>${datumDe(r.abholtermin)}</b></dd>` : ""}${r.gutschrift ? `<dt>Gutschrift</dt><dd>${esc(r.gutschrift)}</dd>` : ""}</dl>
         ${rep ? "" : `<table class="tabelle klein"><thead><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Menge</th></tr></thead><tbody>${(r.positionen || []).map(p => `<tr><td>${esc(p.artikelnummer)}</td><td>${esc(p.bezeichnung)}</td><td>${esc(p.menge)}</td></tr>`).join("")}</tbody></table>`}
@@ -270,13 +297,19 @@ function zeichneDetail() {
         <button type="button" class="knopf klein gefahr" data-dokweg="${a.id}" aria-label="${esc(a.name)} löschen">🗑️</button></span></li>`).join("")}</ul>` : `<p class="leerKlein">Noch keine Dokumente.</p>`}
       <label class="knopf"><input type="file" id="dokNeu" accept="application/pdf,.pdf" multiple hidden>➕ PDF hinzufügen</label>
       <small class="dokHinweis">Die PDFs bleiben auf diesem Gerät. Zum Anhängen an die Outlook-Mail: herunterladen und in die Mail ziehen.</small></section>
-    <section class="karte"><h3>✉️ Vorschau der E-Mail an den Lieferanten</h3><p><b>Betreff:</b> ${esc(m.betreff)}</p><pre class="mailVorschau">${esc(m.text)}</pre></section>
+    ${istPortal(l) ? `<section class="karte"><h3>🌐 Angaben für das Portal</h3><p class="leerKlein">Einzeln kopieren und im Portal in die passenden Felder einfügen.</p>
+      <table class="portalTab">${portalAngaben(r).map(([k, w], i) => `<tr><th>${esc(k)}</th><td>${zeilen(w)}</td><td><button type="button" class="knopf klein" data-kopier="${i}" title="Kopieren">📋</button></td></tr>`).join("")}</table></section>`
+    : `<section class="karte"><h3>✉️ Vorschau der E-Mail an den Lieferanten</h3><p><b>Betreff:</b> ${esc(m.betreff)}</p><pre class="mailVorschau">${esc(m.text)}</pre></section>`}
     <section class="karte"><h3>🕓 Verlauf</h3><ul class="verlauf">${r.verlauf.slice().reverse().map(v => `<li><small>${new Date(v.zeit).toLocaleString("de-DE")}</small> ${esc(v.text)}</li>`).join("")}</ul>
       <button type="button" class="knopf gefahr klein" id="loeschen">🗑️ Löschen</button></section>`;
   $("zurueck").addEventListener("click", () => zeige("uebersicht"));
   $("bearbeiten").addEventListener("click", () => zeige("bearbeiten", r.id));
   $("mailOutlook")?.addEventListener("click", () => { if (r.status === "neu") { setzeStatus(r, "gemeldet", "E-Mail geöffnet"); setTimeout(zeichneDetail, 300); } });
   $("mailKopieren")?.addEventListener("click", () => kopiere(`${m.betreff}\n\n${m.text}`, "Betreff und Text"));
+  const angaben = portalAngaben(r);
+  $("portalKopieren")?.addEventListener("click", () => kopiere(angaben.map(([k, w]) => `${k}: ${w}`).join("\n"), "Alle Angaben"));
+  for (const b of document.querySelectorAll("[data-kopier]")) b.addEventListener("click", () => { const [k, w] = angaben[b.dataset.kopier]; kopiere(w, k); });
+  $("portalNrSpeichern")?.addEventListener("click", () => { r.portalNr = $("portalNr").value.trim(); r.verlauf.push({ zeit: new Date().toISOString(), text: `Vorgangsnr. im Portal: ${r.portalNr || "–"}` }); speichere(); meldung("💾 Vorgangsnummer gespeichert"); zeichneDetail(); });
   $("terminSpeichern")?.addEventListener("click", () => {
     const d = $("abholtermin").value; if (!d) return;
     r.abholtermin = d; setzeStatus(r, ablauf.indexOf(r.status) < ablauf.indexOf("abholung") ? "abholung" : r.status, `Abholung am ${datumDe(d)}`); meldung("📅 Abholtermin eingetragen"); zeichneDetail();
@@ -285,6 +318,7 @@ function zeichneDetail() {
   $("kvaNein")?.addEventListener("click", () => { r.kvaAntwort = "Kunde lehnt ab – Gerät unrepariert zurück"; r.verlauf.push({ zeit: new Date().toISOString(), text: "KVA: Kunde lehnt ab" }); speichere(); zeichneDetail(); });
   for (const b of document.querySelectorAll("[data-status]")) b.addEventListener("click", () => {
     let extra = "";
+    if (b.dataset.status === "gemeldet" && $("portalNr")) { r.portalNr = $("portalNr").value.trim() || r.portalNr || ""; extra = r.portalNr ? `im Portal, Vorgangsnr. ${r.portalNr}` : "im Portal"; }
     if (b.dataset.status === "gutschrift") extra = r.gutschrift = $("gutschriftText")?.value.trim() || r.gutschrift || "";
     if (b.dataset.status === "kva") extra = r.kva = $("kvaText")?.value.trim() || r.kva || "";
     setzeStatus(r, b.dataset.status, extra); zeichneDetail();
@@ -318,21 +352,26 @@ function zeichneLieferanten() {
       <h3 class="breit">${l.id ? `✏️ ${esc(l.name)}` : "➕ Neuer Lieferant"}</h3>
       <label>Name<input name="name" required value="${esc(l.name)}"></label>
       <label>Unsere Kundennummer dort<input name="kundennummer" value="${esc(l.kundennummer)}"></label>
-      <label>E-Mail für Reklamationen<input name="email" type="email" value="${esc(l.email)}" placeholder="reklamation@lieferant.de"></label>
+      <fieldset class="breit meldeweg"><legend>Wie wird gemeldet?</legend>
+        <label class="wahl"><input type="radio" name="meldeweg" value="email" ${istPortal(l) ? "" : "checked"}> ✉️ per E-Mail</label>
+        <label class="wahl"><input type="radio" name="meldeweg" value="portal" ${istPortal(l) ? "checked" : ""}> 🌐 über ein Portal im Internet</label></fieldset>
+      <label class="nurEmail">E-Mail für Reklamationen<input name="email" type="email" value="${esc(l.email)}" placeholder="reklamation@lieferant.de"></label>
+      <label class="nurPortal">Adresse des Portals<input name="portalUrl" value="${esc(l.portalUrl)}" placeholder="z. B. service.lieferant.de/reklamation" inputmode="url" autocomplete="off"></label>
+      <label class="nurPortal"><span>Hinweis zum Portal <small>(kein Passwort!)</small></span><input name="portalHinweis" value="${esc(l.portalHinweis)}" placeholder="z. B. Login mit Kundennummer, Menü „Service → Reklamation“"></label>
       <label>Ansprechpartner<input name="ansprechpartner" value="${esc(l.ansprechpartner)}" placeholder="z. B. Frau Müller"></label>
-      <label>Abholhinweis <small>(statt Standard)</small><input name="abholhinweis" value="${esc(l.abholhinweis)}" placeholder="z. B. Abholung nur Di/Do durch Spedition XY"></label>
-      <details class="breit" open><summary><b>📦 Vorlage für Retouren</b></summary>
+      <label><span>Abholhinweis <small>(statt Standard)</small></span><input name="abholhinweis" value="${esc(l.abholhinweis)}" placeholder="z. B. Abholung nur Di/Do durch Spedition XY"></label>
+      <details class="breit nurEmail" open><summary><b>📦 Vorlage für Retouren</b></summary>
         <label>Betreff<input name="betreff" value="${esc(l.betreff || STANDARD_BETREFF)}"></label>
         <label>Text<textarea name="vorlage" rows="12">${esc(l.vorlage || STANDARD_TEXT)}</textarea></label></details>
-      <details class="breit"><summary><b>🔧 Vorlage für Kunden-Reparaturen</b></summary>
+      <details class="breit nurEmail"><summary><b>🔧 Vorlage für Kunden-Reparaturen</b></summary>
         <label>Betreff<input name="betreffReparatur" value="${esc(l.betreffReparatur || STANDARD_REP_BETREFF)}"></label>
         <label>Text<textarea name="vorlageReparatur" rows="14">${esc(l.vorlageReparatur || STANDARD_REP_TEXT)}</textarea></label></details>
-      <details class="breit"><summary>Platzhalter, die automatisch ausgefüllt werden</summary><ul class="platzhalter">${PLATZHALTER.map(([p, t]) => `<li><code>${p}</code> ${t}</li>`).join("")}</ul></details>
+      <details class="breit nurEmail"><summary>Platzhalter, die automatisch ausgefüllt werden</summary><ul class="platzhalter">${PLATZHALTER.map(([p, t]) => `<li><code>${p}</code> ${t}</li>`).join("")}</ul></details>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button><button type="button" class="knopf" id="lAbbrechen">Abbrechen</button>
-        <button type="button" class="knopf" id="lStandard">↺ Standard-Vorlagen</button>${l.id ? `<button type="button" class="knopf gefahr" id="lLoeschen">🗑️ Löschen</button>` : ""}</div>
+        <button type="button" class="knopf nurEmail" id="lStandard">↺ Standard-Vorlagen</button>${l.id ? `<button type="button" class="knopf gefahr" id="lLoeschen">🗑️ Löschen</button>` : ""}</div>
     </form>` : ""}
-    ${stand.lieferanten.length ? `<table class="tabelle"><thead><tr><th>Name</th><th>E-Mail</th><th>Kd.-Nr.</th><th>Vorgänge</th><th></th></tr></thead><tbody>
-      ${stand.lieferanten.slice().sort((a, b) => a.name.localeCompare(b.name)).map(x => `<tr><td><b>${esc(x.name)}</b>${x.ansprechpartner ? `<br><small>${esc(x.ansprechpartner)}</small>` : ""}</td><td>${esc(x.email || "–")}</td><td>${esc(x.kundennummer || "–")}</td>
+    ${stand.lieferanten.length ? `<table class="tabelle"><thead><tr><th>Name</th><th>Meldeweg</th><th>Kd.-Nr.</th><th>Vorgänge</th><th></th></tr></thead><tbody>
+      ${stand.lieferanten.slice().sort((a, b) => a.name.localeCompare(b.name)).map(x => `<tr><td><b>${esc(x.name)}</b>${x.ansprechpartner ? `<br><small>${esc(x.ansprechpartner)}</small>` : ""}</td><td>${istPortal(x) ? `🌐 ${esc(x.portalUrl || "Portal")}` : `✉️ ${esc(x.email || "–")}`}</td><td>${esc(x.kundennummer || "–")}</td>
         <td>${anzahl(x.id)}${offen(x.id) ? ` <small>(${offen(x.id)} offen)</small>` : ""}</td><td><button type="button" class="knopf klein" data-lbearb="${x.id}">✏️</button></td></tr>`).join("")}</tbody></table>`
       : !l ? `<p class="leer">Noch keine Lieferanten angelegt.</p>` : ""}`;
   beschrifteTabellen();
@@ -340,6 +379,9 @@ function zeichneLieferanten() {
   for (const b of document.querySelectorAll("[data-lbearb]")) b.addEventListener("click", () => { bearbeiteLieferant = b.dataset.lbearb; zeichneLieferanten(); window.scrollTo(0, 0); });
   if (!l) return;
   const form = $("lForm");
+  const zeigeMeldeweg = () => { const p = form.meldeweg.value === "portal"; form.classList.toggle("portalWeg", p); };
+  for (const rb of form.querySelectorAll("[name=meldeweg]")) rb.addEventListener("change", zeigeMeldeweg);
+  zeigeMeldeweg();
   $("lAbbrechen").addEventListener("click", () => { bearbeiteLieferant = null; zeichneLieferanten(); });
   $("lStandard").addEventListener("click", () => {
     form.betreff.value = STANDARD_BETREFF; form.vorlage.value = STANDARD_TEXT; form.betreffReparatur.value = STANDARD_REP_BETREFF; form.vorlageReparatur.value = STANDARD_REP_TEXT;
