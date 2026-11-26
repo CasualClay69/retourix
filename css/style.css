@@ -142,6 +142,7 @@ dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; 
   .tabelle:not(.klein) td[data-l]::before { content: attr(data-l); display: block; font-size: 0.7rem; color: var(--grau); }
   .tabelle:not(.klein) td:first-child { grid-column: 1 / -1; font-size: 1.05rem; }
   .tabelle:not(.klein) td:first-child::before { display: none; }
+  .tabelle:not(.klein) td:empty { display: none; }
   .tabelle:not(.klein) td:last-child:not([data-l]) { grid-column: 1 / -1; }
   .tabelle:not(.klein) td.loeschZelle { width: auto; text-align: right; border-top: 1px solid #f1f2f4; padding-top: 6px; }
   .detailKopf .knoepfe { width: 100%; } .detailKopf .knoepfe .knopf { flex: 1; justify-content: center; }

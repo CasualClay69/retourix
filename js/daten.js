@@ -5,13 +5,13 @@
 //  Nichts wird ins Internet geschickt. Sicherung: Einstellungen → Daten speichern / laden.
 // =====================================================
 
-const VERSION = "3.6";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt · 2.5 Retoure: Retourennummer statt Kunde · 2.6 Reparatur: Gerät mit Art.-Nr./EAN, ohne Kassenbon/Abrechnung/Kostenlimit · 2.7 Drucken von Abhol-/Begleitschein und Aufklebern entfernt · 2.8 Reparaturnummer · 2.9 Reparaturnummer ist die Nummer (kein RP-Kürzel mehr) · 3.0 Löschen direkt in der Übersicht · 3.1 Strich in der Reparaturnummer tippbar · 3.2 PDF-Dokumente an Retouren/Reparaturen · 3.3 Aufräumen (alte erledigte Vorgänge löschen) · 3.4 Meldeweg Portal beim Lieferanten · 3.5 Alle Daten löschen · 3.6 Benutzer/Kennwort fürs Portal
+const VERSION = "3.7";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt · 2.5 Retoure: Retourennummer statt Kunde · 2.6 Reparatur: Gerät mit Art.-Nr./EAN, ohne Kassenbon/Abrechnung/Kostenlimit · 2.7 Drucken von Abhol-/Begleitschein und Aufklebern entfernt · 2.8 Reparaturnummer · 2.9 Reparaturnummer ist die Nummer (kein RP-Kürzel mehr) · 3.0 Löschen direkt in der Übersicht · 3.1 Strich in der Reparaturnummer tippbar · 3.2 PDF-Dokumente an Retouren/Reparaturen · 3.3 Aufräumen (alte erledigte Vorgänge löschen) · 3.4 Meldeweg Portal beim Lieferanten · 3.5 Alle Daten löschen · 3.6 Benutzer/Kennwort fürs Portal · 3.7 Retourennummer ist die Nummer (kein R-Kürzel mehr)
 const SPEICHER = "reklamation-daten-v1";
 
 // Zwei Arten: Retoure (Ware zurück an den Lieferanten) und Kunden-Reparaturauftrag (Gerät geht zur Reparatur und zurück zum Kunden)
 const ARTEN = {
-  artikel:   { name: "Retoure",             kurz: "Retoure",   icon: "📦", praefix: "praefix" },
-  reparatur: { name: "Kunden-Reparatur",    kurz: "Reparatur", icon: "🔧", praefix: "praefixReparatur" },
+  artikel:   { name: "Retoure",             kurz: "Retoure",   icon: "📦" },
+  reparatur: { name: "Kunden-Reparatur",    kurz: "Reparatur", icon: "🔧" },
 };
 // Alle Status (Farbe für die Anzeige)
 const STATUS = [
@@ -37,9 +37,9 @@ const istOffen = r => !FERTIG.includes(r.status);
 
 // Platzhalter für die E-Mail-Vorlagen
 const PLATZHALTER = [
-  ["{nummer}", "Reklamationsnummer"], ["{datum}", "Datum der Reklamation"], ["{kundennummer}", "Unsere Kundennummer beim Lieferanten"],
+  ["{nummer}", "Retouren- bzw. Reparaturnummer"], ["{datum}", "Datum der Reklamation"], ["{kundennummer}", "Unsere Kundennummer beim Lieferanten"],
   ["{anrede}", "Anrede (Sehr geehrte Frau …/Herr … oder Damen und Herren)"], ["{positionen}", "Liste aller Artikel mit Menge"],
-  ["{lieferschein}", "Lieferschein-/Rechnungsnummer"], ["{retourennummer}", "Retourennummer (Retoure)"], ["{reparaturnummer}", "Reparaturnummer (Reparatur)"], ["{fehler}", "Fehlerbeschreibung"], ["{pakete}", "Anzahl Pakete"],
+  ["{lieferschein}", "Lieferschein-/Rechnungsnummer"], ["{fehler}", "Fehlerbeschreibung"], ["{pakete}", "Anzahl Pakete"],
   ["{gewicht}", "Gewicht in kg"], ["{abholhinweis}", "Abholzeiten / Hinweise"],
   ["{geraet}", "Reparatur: Gerätebezeichnung"], ["{artikelnummer}", "Reparatur: unsere Artikelnummer"], ["{lieferantenartikelnr}", "Reparatur: Artikelnummer des Lieferanten"],
   ["{ean}", "Reparatur: EAN"], ["{seriennummer}", "Reparatur: Seriennummer"], ["{kaufdatum}", "Reparatur: Kaufdatum"],
@@ -51,9 +51,8 @@ const STANDARD_TEXT = `{anrede},
 
 hiermit melden wir folgende Reklamation an:
 
-Reklamationsnummer: {nummer}
+Retourennummer: {nummer}
 Unsere Kundennummer: {kundennummer}
-Retourennummer: {retourennummer}
 Lieferschein / Rechnung: {lieferschein}
 
 Artikel:
@@ -99,7 +98,7 @@ Mit freundlichen Grüßen`;
 function leererStand() {
   return {
     version: 1, zaehler: {},   // Jahr -> laufende Nummer
-    einstellungen: { abholhinweis: "", erinnerungTage: 7, reparaturTage: 21, praefix: "R" },
+    einstellungen: { abholhinweis: "", erinnerungTage: 7, reparaturTage: 21 },
     lieferanten: [], reklamationen: [],
   };
 }
@@ -117,12 +116,6 @@ function speichere() {
 }
 
 const neueId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-function naechsteNummer(art = "artikel") {
-  const j = new Date().getFullYear(), k = art === "reparatur" ? `${j}-rep` : j;
-  stand.zaehler[k] = (stand.zaehler[k] || 0) + 1;
-  const praefix = stand.einstellungen[ARTEN[art].praefix] || (art === "reparatur" ? "RP" : "R");
-  return `${praefix}-${j}-${String(stand.zaehler[k]).padStart(4, "0")}`;
-}
 const lieferant = id => stand.lieferanten.find(l => l.id === id) || null;
 const reklamation = id => stand.reklamationen.find(r => r.id === id) || null;
 const statusInfo = id => STATUS.find(s => s.id === id) || STATUS[0];

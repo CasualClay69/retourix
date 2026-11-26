@@ -79,10 +79,10 @@ function zeichneUebersicht() {
       <div class="filter">${[["offen", "Offen"], ["fertig", "Erledigt"], ["alle", "Alle"]].map(([id, n]) => `<button type="button" data-filter="${id}" class="${filter === id ? "an" : ""}">${n}</button>`).join("")}</div>
       <input type="search" id="suche" placeholder="🔎 Suchen: Nummer, Kunde, Artikel, Seriennr., Lieferant …" value="${esc(suche)}">
     </div>
-    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Retourennr.</th><th>Status</th><th></th></tr></thead><tbody>
+    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde</th><th>Status</th><th></th></tr></thead><tbody>
       ${liste.map(r => { const s = statusInfo(r.status), a = ARTEN[artVon(r)];
         return `<tr data-detail="${r.id}"><td><b>${esc(r.nummer)}</b>${r.anhaenge?.length ? ` <span class="klammer" title="${r.anhaenge.length} Dokument(e)">📎${r.anhaenge.length > 1 ? r.anhaenge.length : ""}</span>` : ""}</td><td title="${a.name}">${a.icon} ${a.kurz}</td><td>${datumDe(r.datum)}</td><td>${esc(lieferant(r.lieferant)?.name || "–")}</td>
-          <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${esc(artVon(r) === "reparatur" ? r.kunde : r.retourennummer || r.kunde)}</td>
+          <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${esc(r.kunde || "")}</td>
           <td><span class="status" style="--f:${s.farbe}">${s.icon} ${s.name}</span>${erinIds.has(r.id) ? ` <span class="alt">⏰</span>` : ""}</td>
           <td class="loeschZelle"><button type="button" class="knopf klein gefahr" data-loeschen="${r.id}" title="Löschen" aria-label="${esc(r.nummer)} löschen">🗑️</button></td></tr>`; }).join("")}
     </tbody></table>` : `<p class="leer">${stand.reklamationen.length ? "Nichts in dieser Ansicht." : "Noch nichts erfasst."}</p>`}`;
@@ -122,7 +122,7 @@ function zeichneFormular(id) {
           <label>Name<input name="kunde" value="${esc(r?.kunde)}" required></label>
           <label>Telefon<input name="kundeTelefon" value="${esc(r?.kundeTelefon)}"></label>
         </fieldset>`
-        : `<label>Retourennummer<input name="retourennummer" value="${esc(r?.retourennummer)}" placeholder="z. B. 133xxxxxxxx" inputmode="numeric" autocomplete="off"></label>
+        : `<label>Retourennummer<input name="retourennummer" value="${esc(r?.retourennummer)}" placeholder="z. B. 133xxxxxxxx" inputmode="numeric" autocomplete="off" required></label>
           <label>Lieferschein / Rechnung<input name="lieferschein" value="${esc(r?.lieferschein)}" placeholder="z. B. LS 4711"></label>`}
       ${rep ? (g => `<fieldset class="breit kundeBox geraetBox"><legend>🔧 Gerät</legend>
           <label class="ganz">Bezeichnung<input name="gBez" value="${esc(g.bezeichnung)}" placeholder="z. B. Akku-Bohrschrauber 18 V"></label>
@@ -164,12 +164,12 @@ function zeichneFormular(id) {
       pakete: Number(w("pakete")) || 1, gewicht: w("gewicht"), notiz: w("notiz") };
     if (rep) daten.kunde = w("kunde"); else daten.retourennummer = w("retourennummer");
     if (rep) Object.assign(daten, { reparaturnummer: w("reparaturnummer"), kundeTelefon: w("kundeTelefon"), seriennummer: w("seriennummer"), kaufdatum: w("kaufdatum"), zubehoer: w("zubehoer") });
-    if (rep && stand.reklamationen.some(x => x !== r && x.nummer === daten.reparaturnummer)) { meldung(`Die Reparaturnummer ${daten.reparaturnummer} gibt es schon.`, "fehler"); return; }
-    if (rep) daten.nummer = daten.reparaturnummer;
+    daten.nummer = rep ? daten.reparaturnummer : daten.retourennummer;
+    if (stand.reklamationen.some(x => x !== r && x.nummer === daten.nummer)) { meldung(`Die ${rep ? "Reparaturnummer" : "Retourennummer"} ${daten.nummer} gibt es schon.`, "fehler"); return; }
     let ziel = r;
     if (r) { Object.assign(r, daten); r.verlauf.push({ zeit: new Date().toISOString(), text: "Bearbeitet" }); }
     else {
-      ziel = { id: neueId(), nummer: rep ? daten.nummer : naechsteNummer(art), erstellt: new Date().toISOString(), status: "neu", statusSeit: new Date().toISOString(),
+      ziel = { id: neueId(), nummer: daten.nummer, erstellt: new Date().toISOString(), status: "neu", statusSeit: new Date().toISOString(),
         verlauf: [{ zeit: new Date().toISOString(), text: "Erfasst" }], ...daten };
       stand.reklamationen.push(ziel);
     }
@@ -186,7 +186,7 @@ function fuelleVorlage(text, r) {
     "{nummer}": r.nummer, "{datum}": datumDe(r.datum), "{kundennummer}": l.kundennummer || "–",
     "{anrede}": /^Frau\s/i.test(ap) ? `Sehr geehrte ${ap}` : /^Herr\s/i.test(ap) ? `Sehr geehrter ${ap}` : "Sehr geehrte Damen und Herren",
     "{positionen}": (r.positionen || []).map(p => `- ${p.menge} × ${p.artikelnummer ? `${p.artikelnummer} ` : ""}${p.bezeichnung}`).join("\n"),
-    "{lieferschein}": r.lieferschein || "–", "{retourennummer}": r.retourennummer || "–", "{reparaturnummer}": r.reparaturnummer || "–", "{fehler}": r.fehler || "–", "{pakete}": r.pakete || 1, "{gewicht}": r.gewicht || "–",
+    "{lieferschein}": r.lieferschein || "–", "{retourennummer}": r.retourennummer || r.nummer || "–", "{reparaturnummer}": r.reparaturnummer || "–", "{fehler}": r.fehler || "–", "{pakete}": r.pakete || 1, "{gewicht}": r.gewicht || "–",
     "{abholadresse}": "", "{abholhinweis}": l.abholhinweis || e.abholhinweis || "",
     "{name}": "", "{firma}": "", "{telefon}": "", "{email}": "",   // Absender kommt aus der Outlook-Signatur
     "{geraet}": geraet || "–", "{seriennummer}": r.seriennummer || "–", "{kaufdatum}": r.kaufdatum ? datumDe(r.kaufdatum) : "–", "{beleg}": r.beleg || "–",
@@ -212,7 +212,7 @@ function portalAngaben(r) {
     ["Ihre Artikelnummer", g.lieferantNr], ["EAN", g.ean], ["Seriennummer", r.seriennummer], ["Kaufdatum", r.kaufdatum ? datumDe(r.kaufdatum) : ""],
     ["Zubehör", r.zubehoer], ["Fehlerbeschreibung", r.fehler],
   ] : [
-    ["Unsere Kundennummer", l.kundennummer], ["Reklamationsnummer", r.nummer], ["Retourennummer", r.retourennummer], ["Lieferschein / Rechnung", r.lieferschein],
+    ["Unsere Kundennummer", l.kundennummer], ["Retourennummer", r.nummer], ["Lieferschein / Rechnung", r.lieferschein],
     ...(r.positionen || []).map((p, i) => [`Artikel ${(r.positionen.length > 1) ? i + 1 : ""}`.trim(), `${p.menge} × ${p.artikelnummer ? `${p.artikelnummer} ` : ""}${p.bezeichnung}`]),
     ["Fehlerbeschreibung", r.fehler],
   ];
@@ -275,7 +275,7 @@ function zeichneDetail() {
       <div class="knoepfe"><button type="button" class="knopf" id="bearbeiten">✏️ Bearbeiten</button><button type="button" class="knopf" id="zurueck">← Übersicht</button></div></div>
     <div class="spalten">
       <section class="karte"><h3>📋 ${rep ? "Reparaturauftrag" : "Retoure"}</h3><dl>
-        <dt>Datum</dt><dd>${datumDe(r.datum)}</dd><dt>Lieferant</dt><dd>${esc(l?.name || "–")}</dd>${rep ? `<dt>Kunde</dt><dd>${esc(r.kunde || "–")}</dd>` : `<dt>Retourennummer</dt><dd>${esc(r.retourennummer || "–")}</dd>${r.kunde ? `<dt>Kunde</dt><dd>${esc(r.kunde)}</dd>` : ""}`}
+        <dt>Datum</dt><dd>${datumDe(r.datum)}</dd><dt>Lieferant</dt><dd>${esc(l?.name || "–")}</dd>${rep ? `<dt>Kunde</dt><dd>${esc(r.kunde || "–")}</dd>` : `${r.kunde ? `<dt>Kunde</dt><dd>${esc(r.kunde)}</dd>` : ""}`}
         ${rep ? `<dt>Telefon</dt><dd>${esc(r.kundeTelefon || "–")}</dd>${r.kundeEmail ? `<dt>E-Mail</dt><dd>${esc(r.kundeEmail)}</dd>` : ""}
           ${(g => `<dt>Gerät</dt><dd>${esc(g.bezeichnung || "–")}</dd><dt>Unsere Art.-Nr.</dt><dd>${esc(g.artikelnummer || "–")}</dd>
           <dt>Ihre Art.-Nr.</dt><dd>${esc(g.lieferantNr || "–")}</dd><dt>EAN</dt><dd>${esc(g.ean || "–")}</dd>`)((r.positionen || [])[0] || {})}
@@ -364,10 +364,10 @@ function zeichneLieferanten() {
         <label class="wahl"><input type="radio" name="meldeweg" value="portal" ${istPortal(l) ? "checked" : ""}> 🌐 über ein Portal im Internet</label></fieldset>
       <label class="nurEmail">E-Mail für Reklamationen<input name="email" type="email" value="${esc(l.email)}" placeholder="reklamation@lieferant.de"></label>
       <label class="nurPortal">Adresse des Portals<input name="portalUrl" value="${esc(l.portalUrl)}" placeholder="z. B. service.lieferant.de/reklamation" inputmode="url" autocomplete="off"></label>
+      <label class="nurPortal">Hinweis zum Portal<input name="portalHinweis" value="${esc(l.portalHinweis)}" placeholder="z. B. Login mit Kundennummer, Menü „Service → Reklamation“"></label>
       <label class="nurPortal">Benutzer<input name="portalBenutzer" value="${esc(l.portalBenutzer)}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
       <label class="nurPortal">Kennwort<span class="kennwortZeile"><input name="portalKennwort" type="password" value="${esc(l.portalKennwort)}" autocomplete="new-password"><button type="button" class="knopf klein" id="kwZeigen" title="Kennwort zeigen">👁️</button></span></label>
       <small class="nurPortal breit warn">🔒 Benutzer und Kennwort werden unverschlüsselt auf diesem Gerät gespeichert und stehen auch in der Sicherungsdatei. Gib das Gerät und Sicherungen nicht weiter.</small>
-      <label class="nurPortal">Hinweis zum Portal<input name="portalHinweis" value="${esc(l.portalHinweis)}" placeholder="z. B. Login mit Kundennummer, Menü „Service → Reklamation“"></label>
       <label>Ansprechpartner<input name="ansprechpartner" value="${esc(l.ansprechpartner)}" placeholder="z. B. Frau Müller"></label>
       <label><span>Abholhinweis <small>(statt Standard)</small></span><input name="abholhinweis" value="${esc(l.abholhinweis)}" placeholder="z. B. Abholung nur Di/Do durch Spedition XY"></label>
       <details class="breit nurEmail" open><summary><b>📦 Vorlage für Retouren</b></summary>
@@ -424,7 +424,6 @@ function zeichneEinstellungen() {
       <label class="breit">Abholzeiten / Hinweis (Standard)<input name="abholhinweis" value="${esc(e.abholhinweis)}" placeholder="z. B. Abholung Mo–Fr 7–15 Uhr an Tor 3"></label>
       <label>Erinnern, wenn der Lieferant nach … Tagen nicht antwortet<input name="erinnerungTage" type="number" min="1" value="${esc(e.erinnerungTage)}"></label>
       <label>Erinnern, wenn eine Reparatur länger als … Tage dauert<input name="reparaturTage" type="number" min="1" value="${esc(e.reparaturTage)}"></label>
-      <label>Kürzel Retoure <small>(R-2026-0001)</small><input name="praefix" value="${esc(e.praefix)}" maxlength="6"></label>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
     <section class="karte"><h3>🔄 Aktualisieren</h3>
