@@ -203,8 +203,7 @@ function schrittInhalt(id, r, m) {
     case "gemeldet": return { titel: "Beim Lieferanten melden", html: `${m.an ? `<div class="knoepfe"><a class="knopf haupt" id="mailOutlook" href="${esc(mailtoLink(m))}">✉️ E-Mail in Outlook öffnen</a><button type="button" class="knopf" id="mailKopieren">📋 Text kopieren</button></div>
         <small>An: ${esc(m.an)}${m.cc ? ` · CC: ${esc(m.cc)}` : ""} · Fotos hängst du in Outlook an.</small>` : `<small class="warn">⚠️ Beim Lieferanten ist keine E-Mail-Adresse eingetragen.</small>`}
         ${r.status === "neu" ? `<button type="button" class="knopf klein" data-status="gemeldet">✔ Als gemeldet markieren</button>` : ""}` };
-    case "abholung": return { titel: "Abholung vorbereiten", html: `<div class="knoepfe"><button type="button" class="knopf" id="druckSchein">🖨️ ${rep ? "Begleitschein" : "Abholschein"} + Paketaufkleber drucken</button></div>
-        <div class="zeile"><label>Abholtermin <input type="date" id="abholtermin" value="${esc(r.abholtermin || "")}"></label><button type="button" class="knopf klein" id="terminSpeichern">📅 Termin eintragen</button></div>` };
+    case "abholung": return { titel: "Abholung vorbereiten", html: `<div class="zeile"><label>Abholtermin <input type="date" id="abholtermin" value="${esc(r.abholtermin || "")}"></label><button type="button" class="knopf klein" id="terminSpeichern">📅 Termin eintragen</button></div>` };
     case "abgeholt": return { titel: "Abgeholt", html: `<button type="button" class="knopf klein" data-status="abgeholt">🚚 ${rep ? "Gerät" : "Ware"} wurde abgeholt</button>` };
     case "gutschrift": return { titel: "Gutschrift / Ersatz", html: `<div class="zeile"><input id="gutschriftText" placeholder="z. B. Gutschrift GS-123, 49,90 €" value="${esc(r.gutschrift || "")}"><button type="button" class="knopf klein" data-status="gutschrift">💶 Erhalten</button></div>` };
     case "kva": return { titel: "Kostenvoranschlag (falls nötig)", html: `<div class="zeile"><input id="kvaText" placeholder="z. B. 89 € – Motor tauschen" value="${esc(r.kva || "")}"><button type="button" class="knopf klein" data-status="kva">🧾 KVA erhalten</button></div>
@@ -255,7 +254,6 @@ function zeichneDetail() {
   $("bearbeiten").addEventListener("click", () => zeige("bearbeiten", r.id));
   $("mailOutlook")?.addEventListener("click", () => { if (r.status === "neu") { setzeStatus(r, "gemeldet", "E-Mail geöffnet"); setTimeout(zeichneDetail, 300); } });
   $("mailKopieren")?.addEventListener("click", () => kopiere(`${m.betreff}\n\n${m.text}`, "Betreff und Text"));
-  $("druckSchein")?.addEventListener("click", () => druckeAbholschein(r));
   $("terminSpeichern")?.addEventListener("click", () => {
     const d = $("abholtermin").value; if (!d) return;
     r.abholtermin = d; setzeStatus(r, ablauf.indexOf(r.status) < ablauf.indexOf("abholung") ? "abholung" : r.status, `Abholung am ${datumDe(d)}`); meldung("📅 Abholtermin eingetragen"); zeichneDetail();
@@ -273,33 +271,6 @@ function zeichneDetail() {
     if (!confirm(`${r.nummer} wirklich löschen?`)) return;
     stand.reklamationen = stand.reklamationen.filter(x => x.id !== r.id); speichere(); meldung("🗑️ Gelöscht"); zeige("uebersicht");
   });
-}
-
-// ===================== DRUCKEN =====================
-const druckKopf = () => `<div class="dKopf">${LOGO_SVG}<div><b>Retourix</b><br>Retouren &amp; Reparaturen</div></div>`;
-const artikelTabelle = r => `<table class="dTab"><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Menge</th></tr>${(r.positionen || []).map(p => `<tr><td>${esc(p.artikelnummer)}</td><td>${esc(p.bezeichnung)}</td><td>${esc(p.menge)}</td></tr>`).join("")}</table>`;
-const geraetTabelle = r => `<table class="dTab"><tr><th>Bezeichnung</th><th>Unsere Art.-Nr.</th><th>Ihre Art.-Nr.</th><th>EAN</th></tr>${(r.positionen || []).map(p => `<tr><td>${esc(p.bezeichnung)}</td><td>${esc(p.artikelnummer || "–")}</td><td>${esc(p.lieferantNr || "–")}</td><td>${esc(p.ean || "–")}</td></tr>`).join("")}</table>`;
-function druckeAbholschein(r) {
-  const l = lieferant(r.lieferant) || {}, e = stand.einstellungen, n = Math.max(1, Number(r.pakete) || 1), rep = artVon(r) === "reparatur";
-  $("druck").innerHTML = `<section class="dSeite">${druckKopf()}
-      <h1>${rep ? "Begleitschein Reparatur" : "Abholschein Retoure"}</h1><div class="dNummer">${esc(r.nummer)}</div>
-      <table class="dTab"><tr><th>Lieferant</th><td>${esc(l.name || "")}</td><th>Datum</th><td>${datumDe(r.datum)}</td></tr>
-        <tr><th>Unsere Kd.-Nr.</th><td>${esc(l.kundennummer || "–")}</td><th>${rep ? "Seriennummer" : "Lieferschein"}</th><td>${esc((rep ? r.seriennummer : r.lieferschein) || "–")}</td></tr>
-        ${rep ? "" : `<tr><th>Retourennummer</th><td colspan="3"><b>${esc(r.retourennummer || "–")}</b></td></tr>`}
-        <tr><th>Pakete</th><td>${n}</td><th>Gewicht</th><td>${esc(r.gewicht || "–")} kg</td></tr>
-        ${rep ? `<tr><th>Kaufdatum</th><td>${r.kaufdatum ? datumDe(r.kaufdatum) : "–"}</td><th>Zubehör</th><td>${esc(r.zubehoer || "keins")}</td></tr>` : ""}
-        <tr><th>Abholtermin</th><td colspan="3">${r.abholtermin ? datumDe(r.abholtermin) : "________________"}</td></tr></table>
-      <h2>${rep ? "Gerät" : "Artikel"}</h2>${rep ? geraetTabelle(r) : artikelTabelle(r)}
-      <h2>${rep ? "Fehlerbeschreibung" : "Grund der Retoure"}</h2><p>${zeilen(r.fehler)}</p>
-      ${rep ? `<p><b>Bitte nach der Reparatur an uns zurück – Auftragsnummer ${esc(r.nummer)} angeben.</b></p>` : ""}
-      <div class="dUnterschrift"><div>Übergeben (Markt): ______________________</div><div>Abgeholt (Fahrer): ______________________</div><div>Datum / Uhrzeit: ______________________</div></div>
-    </section>
-    ${Array.from({ length: n }, (_, i) => `<section class="dSeite dAufkleber">${druckKopf()}<div class="aGross">${rep ? "REPARATUR" : "RETOURE"}</div><div class="aNummer">${esc(r.nummer)}</div>
-      ${!rep && r.retourennummer ? `<div class="aZeile">Retourennr. <b>${esc(r.retourennummer)}</b></div>` : ""}<div class="aZeile">an: <b>${esc(l.name || "")}</b></div><div class="aZeile">Paket <b>${i + 1} von ${n}</b></div>
-      <div class="aZeile klein">${(r.positionen || []).map(p => `${esc(p.menge)}× ${esc(p.artikelnummer)} ${esc(p.bezeichnung)}`).join(" · ")}</div></section>`).join("")}`;
-  r.verlauf.push({ zeit: new Date().toISOString(), text: `${rep ? "Begleitschein" : "Abholschein"} gedruckt` });
-  speichere();
-  setTimeout(() => window.print(), 50);
 }
 
 // ===================== LIEFERANTEN =====================
