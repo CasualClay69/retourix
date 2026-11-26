@@ -1,7 +1,7 @@
 "use strict";
 // =====================================================
 //  RETOURIX – Anzeige und Bedienung
-//  Zwei Arten: 📦 Artikel-Reklamation und 🔧 Kunden-Reparaturauftrag (siehe ARTEN / ABLAUF in daten.js)
+//  Zwei Arten: 📦 Retoure und 🔧 Kunden-Reparaturauftrag (siehe ARTEN / ABLAUF in daten.js)
 //  Seiten: Übersicht · Neu · Lieferanten · Einstellungen · Detail
 // =====================================================
 
@@ -70,12 +70,12 @@ function zeichneUebersicht() {
     ${!stand.einstellungen.name || !stand.einstellungen.abholadresse ? `<div class="hinweisBox">👋 Willkommen! Trag zuerst unter <a href="#" data-geh="einstellungen">⚙️ Einstellungen</a> deinen Namen und die Abholadresse ein und lege unter <a href="#" data-geh="lieferanten">🏭 Lieferanten</a> deine Lieferanten an.<div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf klein" id="bspLaden">🧪 Erst mal ausprobieren: Beispieldaten laden</button></div></div>` : ""}
     ${erin.length ? `<div class="hinweisBox warnung">⏰ <b>Bitte kümmern:</b><ul class="erinnerung">${erin.map(x => `<li><a href="#" data-detail="${x.r.id}">${ARTEN[artVon(x.r)].icon} ${esc(x.r.nummer)}</a> – ${esc(x.text)}</li>`).join("")}</ul></div>` : ""}
     <div class="neuKnoepfe">
-      <button type="button" class="knopf haupt gross" data-geh="neu" data-art="artikel">📦 Neue Artikel-Reklamation <small>${offenAnz("artikel")} offen</small></button>
+      <button type="button" class="knopf haupt gross" data-geh="neu" data-art="artikel">📦 Neue Retoure <small>${offenAnz("artikel")} offen</small></button>
       <button type="button" class="knopf haupt gross blau" data-geh="neu" data-art="reparatur">🔧 Neuer Kunden-Reparaturauftrag <small>${offenAnz("reparatur")} offen</small></button>
     </div>
     <div class="kacheln">${sichtbareStatus.map(s => `<div class="kachel" style="--f:${s.farbe}"><span>${s.icon}</span><b>${zaehle(s.id)}</b><small>${s.name}</small></div>`).join("")}</div>
     <div class="leiste">
-      <div class="filter">${[["alle", "Alle Arten"], ["artikel", "📦 Artikel"], ["reparatur", "🔧 Reparatur"]].map(([id, n]) => `<button type="button" data-artfilter="${id}" class="${artFilter === id ? "an" : ""}">${n}</button>`).join("")}</div>
+      <div class="filter">${[["alle", "Alle"], ["artikel", "📦 Retouren"], ["reparatur", "🔧 Reparaturen"]].map(([id, n]) => `<button type="button" data-artfilter="${id}" class="${artFilter === id ? "an" : ""}">${n}</button>`).join("")}</div>
       <div class="filter">${[["offen", "Offen"], ["fertig", "Erledigt"], ["alle", "Alle"]].map(([id, n]) => `<button type="button" data-filter="${id}" class="${filter === id ? "an" : ""}">${n}</button>`).join("")}</div>
       <input type="search" id="suche" placeholder="🔎 Suchen: Nummer, Kunde, Artikel, Seriennr., Lieferant …" value="${esc(suche)}">
     </div>
@@ -225,7 +225,7 @@ function zeichneDetail() {
     <div class="detailKopf"><div><h2>${A.icon} ${esc(r.nummer)} <small class="artName">${A.name}</small></h2><span class="status gross" style="--f:${s.farbe}">${s.icon} ${s.name}</span> <small>seit ${datumDe(r.statusSeit?.slice(0, 10))}</small></div>
       <div class="knoepfe"><button type="button" class="knopf" id="bearbeiten">✏️ Bearbeiten</button><button type="button" class="knopf" id="zurueck">← Übersicht</button></div></div>
     <div class="spalten">
-      <section class="karte"><h3>📋 ${rep ? "Reparaturauftrag" : "Reklamation"}</h3><dl>
+      <section class="karte"><h3>📋 ${rep ? "Reparaturauftrag" : "Retoure"}</h3><dl>
         <dt>Datum</dt><dd>${datumDe(r.datum)}</dd><dt>Lieferant</dt><dd>${esc(l?.name || "–")}</dd><dt>Kunde</dt><dd>${esc(r.kunde || "–")}</dd>
         ${rep ? `<dt>Telefon</dt><dd>${esc(r.kundeTelefon || "–")}</dd>${r.kundeEmail ? `<dt>E-Mail</dt><dd>${esc(r.kundeEmail)}</dd>` : ""}
           <dt>Seriennummer</dt><dd>${esc(r.seriennummer || "–")}</dd><dt>Kaufdatum / Beleg</dt><dd>${r.kaufdatum ? datumDe(r.kaufdatum) : "–"} / ${esc(r.beleg || "–")}</dd>
@@ -274,18 +274,18 @@ const artikelTabelle = r => `<table class="dTab"><tr><th>Artikelnr.</th><th>Beze
 function druckeAbholschein(r) {
   const l = lieferant(r.lieferant) || {}, e = stand.einstellungen, n = Math.max(1, Number(r.pakete) || 1), rep = artVon(r) === "reparatur";
   $("druck").innerHTML = `<section class="dSeite">${druckKopf()}
-      <h1>${rep ? "Begleitschein Reparatur" : "Abholschein Reklamation"}</h1><div class="dNummer">${esc(r.nummer)}</div>
+      <h1>${rep ? "Begleitschein Reparatur" : "Abholschein Retoure"}</h1><div class="dNummer">${esc(r.nummer)}</div>
       <table class="dTab"><tr><th>Lieferant</th><td>${esc(l.name || "")}</td><th>Datum</th><td>${datumDe(r.datum)}</td></tr>
         <tr><th>Unsere Kd.-Nr.</th><td>${esc(l.kundennummer || "–")}</td><th>${rep ? "Seriennummer" : "Lieferschein"}</th><td>${esc((rep ? r.seriennummer : r.lieferschein) || "–")}</td></tr>
         <tr><th>Pakete</th><td>${n}</td><th>Gewicht</th><td>${esc(r.gewicht || "–")} kg</td></tr>
         ${rep ? `<tr><th>Abrechnung</th><td>${esc(r.garantie || "–")}</td><th>Kostenlimit</th><td>${esc(r.kostenlimit || "–")}</td></tr><tr><th>Zubehör</th><td colspan="3">${esc(r.zubehoer || "keins")}</td></tr>` : ""}
         <tr><th>Abholtermin</th><td>${r.abholtermin ? datumDe(r.abholtermin) : "________________"}</td><th>Ansprechpartner</th><td>${esc(e.name)} ${e.telefon ? `· ${esc(e.telefon)}` : ""}</td></tr></table>
       <h2>${rep ? "Gerät" : "Artikel"}</h2>${artikelTabelle(r)}
-      <h2>${rep ? "Fehlerbeschreibung" : "Grund der Reklamation"}</h2><p>${zeilen(r.fehler)}</p>
+      <h2>${rep ? "Fehlerbeschreibung" : "Grund der Retoure"}</h2><p>${zeilen(r.fehler)}</p>
       ${rep ? `<p><b>Bitte nach der Reparatur zurück an die obige Adresse – Auftragsnummer ${esc(r.nummer)} angeben.</b></p>` : ""}
       <div class="dUnterschrift"><div>Übergeben (${esc(e.firma)}): ______________________</div><div>Abgeholt (Fahrer): ______________________</div><div>Datum / Uhrzeit: ______________________</div></div>
     </section>
-    ${Array.from({ length: n }, (_, i) => `<section class="dSeite dAufkleber">${druckKopf()}<div class="aGross">${rep ? "REPARATUR" : "REKLAMATION"}</div><div class="aNummer">${esc(r.nummer)}</div>
+    ${Array.from({ length: n }, (_, i) => `<section class="dSeite dAufkleber">${druckKopf()}<div class="aGross">${rep ? "REPARATUR" : "RETOURE"}</div><div class="aNummer">${esc(r.nummer)}</div>
       <div class="aZeile">an: <b>${esc(l.name || "")}</b></div><div class="aZeile">Paket <b>${i + 1} von ${n}</b></div>
       <div class="aZeile klein">${(r.positionen || []).map(p => `${esc(p.menge)}× ${esc(p.artikelnummer)} ${esc(p.bezeichnung)}`).join(" · ")}</div></section>`).join("")}`;
   r.verlauf.push({ zeit: new Date().toISOString(), text: `${rep ? "Begleitschein" : "Abholschein"} gedruckt` });
@@ -306,7 +306,7 @@ function zeichneLieferanten() {
       <label>CC <small>(mehrere mit Komma)</small><input name="cc" value="${esc(l.cc)}"></label>
       <label>Ansprechpartner<input name="ansprechpartner" value="${esc(l.ansprechpartner)}" placeholder="z. B. Frau Müller"></label>
       <label>Abholhinweis <small>(statt Standard)</small><input name="abholhinweis" value="${esc(l.abholhinweis)}" placeholder="z. B. Abholung nur Di/Do durch Spedition XY"></label>
-      <details class="breit" open><summary><b>📦 Vorlage für Artikel-Reklamationen</b></summary>
+      <details class="breit" open><summary><b>📦 Vorlage für Retouren</b></summary>
         <label>Betreff<input name="betreff" value="${esc(l.betreff || STANDARD_BETREFF)}"></label>
         <label>Text<textarea name="vorlage" rows="12">${esc(l.vorlage || STANDARD_TEXT)}</textarea></label></details>
       <details class="breit"><summary><b>🔧 Vorlage für Kunden-Reparaturen</b></summary>
@@ -354,7 +354,7 @@ function zeichneEinstellungen() {
       <label class="breit">Abholzeiten / Hinweis (Standard)<input name="abholhinweis" value="${esc(e.abholhinweis)}" placeholder="z. B. Abholung Mo–Fr 7–15 Uhr an Tor 3"></label>
       <label>Erinnern, wenn der Lieferant nach … Tagen nicht antwortet<input name="erinnerungTage" type="number" min="1" value="${esc(e.erinnerungTage)}"></label>
       <label>Erinnern, wenn eine Reparatur länger als … Tage dauert<input name="reparaturTage" type="number" min="1" value="${esc(e.reparaturTage)}"></label>
-      <label>Kürzel Artikel-Reklamation<input name="praefix" value="${esc(e.praefix)}" maxlength="6"></label>
+      <label>Kürzel Retoure<input name="praefix" value="${esc(e.praefix)}" maxlength="6"></label>
       <label>Kürzel Reparaturauftrag<input name="praefixReparatur" value="${esc(e.praefixReparatur)}" maxlength="6"></label>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
@@ -370,11 +370,11 @@ function zeichneEinstellungen() {
       <div><h3>📱 Auf dem Handy öffnen</h3><p>Mit der Handy-Kamera scannen – dann öffnet sich Retourix im Browser.<br><a href="https://casualclay69.github.io/retourix/">casualclay69.github.io/retourix</a></p>
         <p><small>iPhone: in Safari auf „Teilen“ → „Zum Home-Bildschirm“ tippen, dann liegt Retourix wie eine App auf dem Startbildschirm. Die Daten sind auf jedem Gerät getrennt.</small></p></div></section>
     <section class="karte"><h3>🧪 Vorführen</h3>
-      <p>Füllt Retourix mit erfundenen Lieferanten, Reklamationen und Reparaturen in verschiedenen Stufen – zum Ausprobieren oder Zeigen. Deine echten Einträge bleiben dabei erhalten.</p>
+      <p>Füllt Retourix mit erfundenen Lieferanten, Retouren und Reparaturen in verschiedenen Stufen – zum Ausprobieren oder Zeigen. Deine echten Einträge bleiben dabei erhalten.</p>
       <div class="knoepfe"><button type="button" class="knopf" id="bsp">🧪 Beispieldaten laden</button><button type="button" class="knopf gefahr" id="allesWeg">🗑️ Alle Daten löschen</button></div></section>`;
   $("bsp").addEventListener("click", () => { ladeBeispieldaten(); meldung("🧪 Beispieldaten geladen"); zeige("uebersicht"); });
   $("allesWeg").addEventListener("click", () => {
-    if (!confirm("Wirklich ALLE Reklamationen, Reparaturen und Lieferanten löschen? Das geht nicht rückgängig.")) return;
+    if (!confirm("Wirklich ALLE Retouren, Reparaturen und Lieferanten löschen? Das geht nicht rückgängig.")) return;
     loescheAlles(); meldung("🗑️ Alles gelöscht"); zeige("uebersicht");
   });
   $("eForm").addEventListener("submit", ev => {
