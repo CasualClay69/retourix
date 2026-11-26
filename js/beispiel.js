@@ -41,7 +41,7 @@ function ladeBeispieldaten() {
       positionen: [{ artikelnummer: "6620500", bezeichnung: "Benzin-Rasenmäher 46 cm", menge: 1 }], seriennummer: "RM46-998812", kaufdatum: d(300), beleg: "Bon 4471",
       garantie: "Garantie / Gewährleistung", kostenlimit: "", zubehoer: "Fangkorb", fehler: "Motor springt nicht an, Seilzug klemmt.",
       pakete: 1, gewicht: "28", notiz: "", status: "gemeldet", statusSeit: tag(2), erstellt: tag(2),
-      verlauf: verlauf([2, "Erfasst"], [2, "Kundenbeleg gedruckt"], [2, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"]) },
+      verlauf: verlauf([2, "Erfasst"], [2, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"]) },
     { id: "bsp-p2", art: "reparatur", nummer: `RP-${j}-0398`, datum: d(18), lieferant: "bsp-l1", kunde: "Frau Musterfrau", kundeTelefon: "0151 0000002", kundeEmail: "kundin@example.com",
       positionen: [{ artikelnummer: "4711500", bezeichnung: "Akku-Kettensäge 36 V", menge: 1 }], seriennummer: "KS36-120455", kaufdatum: d(500), beleg: "Bon 1180",
       garantie: "Kostenpflichtig", kostenlimit: "60 €", zubehoer: "2 Akkus, Ladegerät", fehler: "Kette läuft nicht mehr an.",

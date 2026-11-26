@@ -233,7 +233,7 @@ function zeichneDetail() {
   }).join("");
   $("inhalt").innerHTML = `
     <div class="detailKopf"><div><h2>${A.icon} ${esc(r.nummer)} <small class="artName">${A.name}</small></h2><span class="status gross" style="--f:${s.farbe}">${s.icon} ${s.name}</span> <small>seit ${datumDe(r.statusSeit?.slice(0, 10))}</small></div>
-      <div class="knoepfe">${rep ? `<button type="button" class="knopf" id="druckKunde">🖨️ Beleg für den Kunden</button>` : ""}<button type="button" class="knopf" id="bearbeiten">✏️ Bearbeiten</button><button type="button" class="knopf" id="zurueck">← Übersicht</button></div></div>
+      <div class="knoepfe"><button type="button" class="knopf" id="bearbeiten">✏️ Bearbeiten</button><button type="button" class="knopf" id="zurueck">← Übersicht</button></div></div>
     <div class="spalten">
       <section class="karte"><h3>📋 ${rep ? "Reparaturauftrag" : "Reklamation"}</h3><dl>
         <dt>Datum</dt><dd>${datumDe(r.datum)}</dd><dt>Lieferant</dt><dd>${esc(l?.name || "–")}</dd><dt>Kunde</dt><dd>${esc(r.kunde || "–")}</dd>
@@ -257,7 +257,6 @@ function zeichneDetail() {
       <button type="button" class="knopf gefahr klein" id="loeschen">🗑️ Löschen</button></section>`;
   $("zurueck").addEventListener("click", () => zeige("uebersicht"));
   $("bearbeiten").addEventListener("click", () => zeige("bearbeiten", r.id));
-  $("druckKunde")?.addEventListener("click", () => druckeKundenbeleg(r));
   $("mailOutlook")?.addEventListener("click", () => { if (r.status === "neu") { setzeStatus(r, "gemeldet", "E-Mail geöffnet"); setTimeout(zeichneDetail, 300); } });
   $("mailKopieren")?.addEventListener("click", () => kopiere(`${m.betreff}\n\n${m.text}`, "Betreff und Text"));
   $("kundeKopieren")?.addEventListener("click", () => kopiere(kundenMail(r).text, "Nachricht für den Kunden"));
@@ -303,23 +302,6 @@ function druckeAbholschein(r) {
       <div class="aZeile">an: <b>${esc(l.name || "")}</b></div><div class="aZeile">Paket <b>${i + 1} von ${n}</b></div>
       <div class="aZeile klein">${(r.positionen || []).map(p => `${esc(p.menge)}× ${esc(p.artikelnummer)} ${esc(p.bezeichnung)}`).join(" · ")}</div></section>`).join("")}`;
   r.verlauf.push({ zeit: new Date().toISOString(), text: `${rep ? "Begleitschein" : "Abholschein"} gedruckt` });
-  speichere();
-  setTimeout(() => window.print(), 50);
-}
-// Beleg für den Kunden (Reparatur): zwei Hälften – eine für den Kunden, eine bleibt im Markt
-function druckeKundenbeleg(r) {
-  const e = stand.einstellungen, l = lieferant(r.lieferant) || {};
-  const haelfte = (fuer) => `<div class="dHaelfte">${druckKopf()}
-    <h1>Reparaturauftrag <small>(${fuer})</small></h1><div class="dNummer">${esc(r.nummer)}</div>
-    <table class="dTab"><tr><th>Kunde</th><td>${esc(r.kunde)}</td><th>Telefon</th><td>${esc(r.kundeTelefon || "–")}</td></tr>
-      <tr><th>Gerät</th><td colspan="3">${esc((r.positionen || []).map(p => `${p.artikelnummer} ${p.bezeichnung}`).join(", "))}</td></tr>
-      <tr><th>Seriennummer</th><td>${esc(r.seriennummer || "–")}</td><th>Kaufdatum / Beleg</th><td>${r.kaufdatum ? datumDe(r.kaufdatum) : "–"} / ${esc(r.beleg || "–")}</td></tr>
-      <tr><th>Zubehör</th><td>${esc(r.zubehoer || "keins")}</td><th>Abrechnung</th><td>${esc(r.garantie || "–")}${r.kostenlimit ? ` · Limit ${esc(r.kostenlimit)}` : ""}</td></tr>
-      <tr><th>Fehler</th><td colspan="3">${zeilen(r.fehler)}</td></tr><tr><th>Angenommen am</th><td>${datumDe(r.datum)}</td><th>von</th><td>${esc(e.name)}</td></tr></table>
-    <p class="dKlein">Das Gerät wird zur Prüfung/Reparatur an ${esc(l.name || "den Hersteller")} geschickt. Wir melden uns, sobald es zurück ist. Bitte bringen Sie diesen Beleg zur Abholung mit.${r.garantie === "Kostenpflichtig" || r.kostenlimit ? " Kosten über dem Limit nur nach Ihrer Zustimmung." : ""}</p>
-    <div class="dUnterschrift zwei"><div>Unterschrift Kunde: ______________________</div><div>Unterschrift ${esc(e.firma)}: ______________________</div></div></div>`;
-  $("druck").innerHTML = `<section class="dSeite">${haelfte("für den Kunden")}<div class="dSchnitt">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</div>${haelfte("bleibt im Markt")}</section>`;
-  r.verlauf.push({ zeit: new Date().toISOString(), text: "Kundenbeleg gedruckt" });
   speichere();
   setTimeout(() => window.print(), 50);
 }
