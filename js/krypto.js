@@ -7,7 +7,7 @@
 //  Das Kennwort selbst wird nirgends gespeichert – vergessen = Daten weg.
 // =====================================================
 
-const TRESOR = "retourix-tresor", KRYPTO_ITER = 310000, KENNWORT_MIN = 6, AUTO_SPERRE_MIN = 30;
+const TRESOR = "retourix-tresor", KRYPTO_ITER = 310000, KENNWORT_MIN = 4, AUTO_SPERRE_MIN = 30;
 const krypto = { schluessel: null, salz: null, iter: KRYPTO_ITER };
 
 const zuB64 = buf => { const b = new Uint8Array(buf); let s = ""; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
