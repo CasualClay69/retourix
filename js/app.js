@@ -362,18 +362,7 @@ function zeichneEinstellungen() {
       <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
-      <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>
-    <section class="karte qrKarte"><img src="bilder/qr.svg" alt="QR-Code zu Retourix" width="180" height="180">
-      <div><h3>📱 Auf dem Handy öffnen</h3><p>Mit der Handy-Kamera scannen – dann öffnet sich Retourix im Browser.<br><a href="https://casualclay69.github.io/retourix/">casualclay69.github.io/retourix</a></p>
-        <p><small>iPhone: in Safari auf „Teilen“ → „Zum Home-Bildschirm“ tippen, dann liegt Retourix wie eine App auf dem Startbildschirm. Die Daten sind auf jedem Gerät getrennt.</small></p></div></section>
-    <section class="karte"><h3>🧪 Vorführen</h3>
-      <p>Füllt Retourix mit erfundenen Lieferanten, Retouren und Reparaturen in verschiedenen Stufen – zum Ausprobieren oder Zeigen. Deine echten Einträge bleiben dabei erhalten.</p>
-      <div class="knoepfe"><button type="button" class="knopf" id="bsp">🧪 Beispieldaten laden</button><button type="button" class="knopf gefahr" id="allesWeg">🗑️ Alle Daten löschen</button></div></section>`;
-  $("bsp").addEventListener("click", () => { ladeBeispieldaten(); meldung("🧪 Beispieldaten geladen"); zeige("uebersicht"); });
-  $("allesWeg").addEventListener("click", () => {
-    if (!confirm("Wirklich ALLE Retouren, Reparaturen und Lieferanten löschen? Das geht nicht rückgängig.")) return;
-    loescheAlles(); meldung("🗑️ Alles gelöscht"); zeige("uebersicht");
-  });
+      <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>`;
   $("eForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const f = Object.fromEntries(new FormData(ev.target).entries());
@@ -409,7 +398,7 @@ async function aktualisiere() {
   try {
     const t = await (await fetch("js/daten.js", { cache: "reload" })).text();
     const neu = (t.match(/VERSION = "([^"]+)"/) || [])[1];
-    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/beispiel.js", "js/app.js", "manifest.json", "bilder/qr.svg"]
+    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/beispiel.js", "js/app.js", "manifest.json"]
       .map(d => fetch(d, { cache: "reload" }).catch(() => null)));
     if (neu && neu !== VERSION) { meldung(`✨ Neue Version ${neu} wird geladen …`); setTimeout(() => location.reload(), 900); }
     else { meldung(`✅ Retourix ist aktuell (v${VERSION})`); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren"; }

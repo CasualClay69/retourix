@@ -80,10 +80,6 @@ textarea { resize: vertical; } input:focus, select:focus, textarea:focus { outli
 .position .weg { border: 1px solid var(--rand); border-radius: 8px; background: #fff; cursor: pointer; color: #b91c1c; }
 .platzhalter { columns: 2; font-size: 0.85rem; } code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; }
 
-.qrKarte { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
-.qrKarte img { border: 1px solid var(--rand); border-radius: 10px; background: #fff; flex: none; }
-.qrKarte div { flex: 1; min-width: 220px; } .qrKarte p { margin: 6px 0; }
-
 /* ----- Detail ----- */
 .detailKopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
 .detailKopf h2 { margin: 0 0 6px; }
