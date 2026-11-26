@@ -359,8 +359,13 @@ function zeichneLieferanten() {
 }
 
 // ===================== EINSTELLUNGEN =====================
+// Erledigte/abgelehnte/ausgegebene Vorgänge, die seit mindestens 3 Monaten abgeschlossen sind
+function alteVorgaenge() {
+  const grenze = new Date(); grenze.setMonth(grenze.getMonth() - 3);
+  return stand.reklamationen.filter(r => !istOffen(r) && new Date(r.statusSeit || r.erstellt) <= grenze);
+}
 function zeichneEinstellungen() {
-  const e = stand.einstellungen;
+  const e = stand.einstellungen, alt = alteVorgaenge(), altDok = alt.reduce((n, r) => n + (r.anhaenge?.length || 0), 0);
   $("inhalt").innerHTML = `<h2>⚙️ Einstellungen</h2>
     <form id="eForm" class="formular karte">
       <label class="breit">Abholzeiten / Hinweis (Standard)<input name="abholhinweis" value="${esc(e.abholhinweis)}" placeholder="z. B. Abholung Mo–Fr 7–15 Uhr an Tor 3"></label>
@@ -372,6 +377,10 @@ function zeichneEinstellungen() {
     <section class="karte"><h3>🔄 Aktualisieren</h3>
       <p>Holt die neueste Version von Retourix. Deine Daten bleiben dabei erhalten.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="aktualisieren">🔄 Aktualisieren</button><small>Du hast <b>v${VERSION}</b></small></div></section>
+    <section class="karte"><h3>🧹 Aufräumen</h3>
+      <p>Löscht alle Retouren und Reparaturen, die seit mindestens <b>3 Monaten</b> erledigt, abgelehnt oder an den Kunden ausgegeben sind – mit allen ihren PDF-Dokumenten. Offene Vorgänge bleiben immer erhalten.</p>
+      <div class="knoepfe"><button type="button" class="knopf gefahr" id="aufraeumen" ${alt.length ? "" : "disabled"}>🧹 ${alt.length ? `${alt.length} alte Vorgänge löschen` : "Nichts zum Aufräumen"}</button>
+        ${alt.length ? `<small>${alt.length} Vorgänge${altDok ? ` · ${altDok} Dokument${altDok > 1 ? "e" : ""}` : ""}</small>` : ""}</div></section>
     <section class="karte"><h3>💾 Datensicherung</h3>
       <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Die Sicherung enthält auch die PDF-Dokumente. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
@@ -384,6 +393,15 @@ function zeichneEinstellungen() {
     speichere(); meldung("💾 Einstellungen gespeichert"); zeichne();
   });
   $("aktualisieren").addEventListener("click", aktualisiere);
+  $("aufraeumen").addEventListener("click", async () => {
+    const weg = alteVorgaenge(); if (!weg.length) return;
+    const dok = weg.reduce((n, r) => n + (r.anhaenge?.length || 0), 0);
+    if (!confirm(`${weg.length} Vorgänge${dok ? ` und ${dok} PDF-Dokument${dok > 1 ? "e" : ""}` : ""} endgültig löschen?\n\nTipp: Vorher eine Sicherung speichern, falls du sie später noch brauchst.`)) return;
+    for (const r of weg) await dateienEntfernenVon(r);
+    const ids = new Set(weg.map(r => r.id));
+    stand.reklamationen = stand.reklamationen.filter(r => !ids.has(r.id)); speichere();
+    meldung(`🧹 ${weg.length} alte Vorgänge gelöscht`); zeichneEinstellungen();
+  });
   $("export").addEventListener("click", async () => {
     stand.letzteSicherung = new Date().toISOString(); speichere();
     const dateien = await alleDateienFuerSicherung();

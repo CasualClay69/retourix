@@ -31,6 +31,7 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
   font: inherit; font-weight: 600; color: var(--text); cursor: pointer; text-decoration: none; }
 .knopf:hover { border-color: #c8ccd2; background: #fafafa; }
 .knopf.haupt { background: var(--rot); border-color: var(--rot); color: #fff; } .knopf.haupt:hover { background: var(--rot-dunkel); }
+.knopf:disabled { opacity: .5; cursor: default; }
 .knopf.gefahr { color: #b91c1c; border-color: #fecaca; } .knopf.klein { padding: 5px 10px; font-size: 0.85rem; }
 .knoepfe { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .karte { background: #fff; border: 1px solid var(--rand); border-radius: 12px; padding: 16px 18px; box-shadow: var(--schatten); margin-bottom: 16px; }
