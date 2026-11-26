@@ -1,3 +1,4 @@
+/* © 2026 Stefan R. – Alle Rechte vorbehalten. */
 /* =====================================================
    RETOURIX – Aussehen (schlicht, Firmen-Rot)
    ===================================================== */
@@ -22,6 +23,7 @@ h2 { margin: 6px 0 14px; font-size: 1.35rem; } h3 { margin: 0 0 10px; font-size:
 
 main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
 .fuss { text-align: center; color: var(--grau); font-size: 0.85rem; padding: 18px 16px calc(24px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rand); }
+.fuss .copy { display: inline-block; margin-top: 4px; font-size: 0.78rem; }
 .fuss a { color: var(--rot-dunkel); font-weight: 600; overflow-wrap: anywhere; }
 
 /* ----- Bausteine ----- */

@@ -1,4 +1,5 @@
 "use strict";
+// © 2026 Stefan R. – Alle Rechte vorbehalten.
 // =====================================================
 //  BEISPIELDATEN – nur zum Vorführen. Alles erfunden.
 //  Einstellungen → „Beispieldaten laden“ / „Alle Daten löschen“

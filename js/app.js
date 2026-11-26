@@ -1,4 +1,5 @@
 "use strict";
+// © 2026 Stefan R. – Alle Rechte vorbehalten.
 // =====================================================
 //  RETOURIX – Anzeige und Bedienung
 //  Zwei Arten: 📦 Retoure und 🔧 Kunden-Reparaturauftrag (siehe ARTEN / ABLAUF in daten.js)
@@ -437,6 +438,7 @@ function start() {
   for (const r of stand.reklamationen) if (!r.art) r.art = "artikel";   // ältere Einträge
   document.querySelector(".markeIcon").outerHTML = LOGO_SVG;
   $("version").textContent = $("versionFuss").textContent = "v" + VERSION;
+  { const j = new Date().getFullYear(); $("jahr").textContent = j > 2026 ? `2026–${j}` : "2026"; }
   document.title = `Retourix ${VERSION}`;
   const fav = document.createElement("link"); fav.rel = "icon"; fav.href = "data:image/svg+xml," + encodeURIComponent(LOGO_SVG.replace('class="logo" ', 'xmlns="http://www.w3.org/2000/svg" ')); document.head.append(fav);
   for (const b of document.querySelectorAll("#reiter button")) b.addEventListener("click", () => { bearbeiteLieferant = null; if (b.dataset.seite === "neu") neueArt = "artikel"; zeige(b.dataset.seite); });
