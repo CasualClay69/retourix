@@ -51,7 +51,6 @@ function erinnerungen() {
     const seit = tageSeit(r.statusSeit || r.erstellt);
     if (r.status === "gemeldet" && seit >= t1) liste.push({ r, text: `seit ${seit} Tagen keine Antwort vom Lieferanten` });
     if (artVon(r) === "reparatur" && ["abgeholt", "kva"].includes(r.status) && seit >= t2) liste.push({ r, text: `seit ${seit} Tagen beim Lieferanten in Reparatur` });
-    if (r.status === "zurueck" && seit >= 1) liste.push({ r, text: "zurück im Markt – Kunde noch nicht benachrichtigt" });
   }
   return liste;
 }
@@ -61,7 +60,7 @@ function zeichneUebersicht() {
   const erin = erinnerungen(), erinIds = new Set(erin.map(x => x.r.id));
   const offenAnz = art => stand.reklamationen.filter(r => artVon(r) === art && istOffen(r)).length;
   const zaehle = id => stand.reklamationen.filter(r => r.status === id && (artFilter === "alle" || artVon(r) === artFilter)).length;
-  const sichtbareStatus = STATUS.filter(s => !["abgelehnt", "erledigt", "ausgegeben"].includes(s.id) && (artFilter === "alle" || ABLAUF[artFilter].includes(s.id)));
+  const sichtbareStatus = STATUS.filter(s => !["abgelehnt", "erledigt", "ausgegeben"].includes(s.id) && (artFilter === "alle" ? Object.values(ABLAUF).some(a => a.includes(s.id)) : ABLAUF[artFilter].includes(s.id)));
   const liste = stand.reklamationen
     .filter(r => artFilter === "alle" || artVon(r) === artFilter)
     .filter(r => filter === "alle" || (filter === "offen" ? istOffen(r) : !istOffen(r)))
@@ -113,8 +112,7 @@ function zeichneFormular(id) {
       <label>Lieferant<select name="lieferant" required>${stand.lieferanten.slice().sort((a, b) => a.name.localeCompare(b.name)).map(l => `<option value="${l.id}" ${r?.lieferant === l.id ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
       ${rep ? `<fieldset class="breit kundeBox"><legend>👤 Kunde <small>(bleibt intern)</small></legend>
           <label>Name<input name="kunde" value="${esc(r?.kunde)}" required></label>
-          <label>Telefon<input name="kundeTelefon" value="${esc(r?.kundeTelefon)}" placeholder="für die Benachrichtigung"></label>
-          <label>E-Mail <small>(optional)</small><input name="kundeEmail" type="email" value="${esc(r?.kundeEmail)}"></label>
+          <label>Telefon<input name="kundeTelefon" value="${esc(r?.kundeTelefon)}"></label>
         </fieldset>`
         : `<label>Kunde <small>(bleibt intern, geht nicht an den Lieferanten)</small><input name="kunde" value="${esc(r?.kunde)}" placeholder="Name oder Kundennummer"></label>
           <label>Lieferschein / Rechnung<input name="lieferschein" value="${esc(r?.lieferschein)}" placeholder="z. B. LS 4711"></label>`}
@@ -145,7 +143,7 @@ function zeichneFormular(id) {
     if (!positionen.length) { meldung(`Bitte ${rep ? "das Gerät" : "mindestens einen Artikel"} eintragen.`, "fehler"); return; }
     const daten = { art, datum: w("datum"), lieferant: w("lieferant"), kunde: w("kunde"), lieferschein: w("lieferschein"), positionen, fehler: w("fehler"),
       pakete: Number(w("pakete")) || 1, gewicht: w("gewicht"), notiz: w("notiz") };
-    if (rep) Object.assign(daten, { kundeTelefon: w("kundeTelefon"), kundeEmail: w("kundeEmail"), seriennummer: w("seriennummer"), kaufdatum: w("kaufdatum"),
+    if (rep) Object.assign(daten, { kundeTelefon: w("kundeTelefon"), seriennummer: w("seriennummer"), kaufdatum: w("kaufdatum"),
       beleg: w("beleg"), garantie: w("garantie"), kostenlimit: w("kostenlimit"), zubehoer: w("zubehoer") });
     let ziel = r;
     if (r) { Object.assign(r, daten); r.verlauf.push({ zeit: new Date().toISOString(), text: "Bearbeitet" }); }
@@ -181,10 +179,6 @@ function mailFuer(r) {
     betreff: fuelleVorlage((rep ? l.betreffReparatur : l.betreff) || (rep ? STANDARD_REP_BETREFF : STANDARD_BETREFF), r),
     text: fuelleVorlage((rep ? l.vorlageReparatur : l.vorlage) || (rep ? STANDARD_REP_TEXT : STANDARD_TEXT), r) };
 }
-function kundenMail(r) {
-  const e = stand.einstellungen;
-  return { an: r.kundeEmail || "", cc: "", betreff: fuelleVorlage(e.kundeBetreff || STANDARD_KUNDE_BETREFF, r), text: fuelleVorlage(e.kundeText || STANDARD_KUNDE_TEXT, r) };
-}
 const mailtoLink = m => `mailto:${encodeURIComponent(m.an).replace(/%40/g, "@").replace(/%2C/g, ",")}?${[m.cc && `cc=${encodeURIComponent(m.cc)}`, `subject=${encodeURIComponent(m.betreff)}`, `body=${encodeURIComponent(m.text.replace(/\r?\n/g, "\r\n"))}`].filter(Boolean).join("&")}`;
 async function kopiere(text, was) {
   try { await navigator.clipboard.writeText(text); meldung(`📋 ${was} kopiert`); } catch (e) { meldung("Kopieren ging nicht – markiere den Text in der Vorschau.", "fehler"); }
@@ -210,11 +204,7 @@ function schrittInhalt(id, r, m) {
     case "kva": return { titel: "Kostenvoranschlag (falls nötig)", html: `<div class="zeile"><input id="kvaText" placeholder="z. B. 89 € – Motor tauschen" value="${esc(r.kva || "")}"><button type="button" class="knopf klein" data-status="kva">🧾 KVA erhalten</button></div>
         ${r.status === "kva" ? `<div class="zeile"><button type="button" class="knopf klein" id="kvaJa">👍 Kunde stimmt zu</button><button type="button" class="knopf klein gefahr" id="kvaNein">👎 Kunde lehnt ab</button></div>` : ""}
         <small>Kein KVA nötig? Dann einfach den nächsten Schritt nehmen.</small>` };
-    case "zurueck": return { titel: "Zurück im Markt", html: `<button type="button" class="knopf klein" data-status="zurueck">📥 Gerät ist zurück</button>` };
-    case "kunde_info": { const k = kundenMail(r);
-      return { titel: "Kunde benachrichtigen", html: `<div class="knoepfe">${r.kundeEmail ? `<a class="knopf haupt" id="kundeMail" href="${esc(mailtoLink(k))}">✉️ Mail an Kunden</a>` : ""}<button type="button" class="knopf" id="kundeKopieren">📋 Text kopieren (SMS / WhatsApp)</button>
-        ${r.kundeTelefon ? `<a class="knopf" href="tel:${esc(r.kundeTelefon.replace(/[^\d+]/g, ""))}">📞 ${esc(r.kundeTelefon)}</a>` : ""}</div>
-        <button type="button" class="knopf klein" data-status="kunde_info">✔ Kunde ist informiert</button>` }; }
+    case "zurueck": return { titel: "Zurück im Markt", html: `<button type="button" class="knopf klein" data-status="zurueck">📥 Gerät ist zurück</button>${r.kundeTelefon ? `<small>Kunde anrufen: <a href="tel:${esc(r.kundeTelefon.replace(/[^\d+]/g, ""))}">📞 ${esc(r.kundeTelefon)}</a></small>` : ""}` };
     case "ausgegeben": return { titel: "An Kunden ausgegeben", html: `<button type="button" class="knopf klein" data-status="ausgegeben">🤝 Kunde hat das Gerät abgeholt</button>` };
     case "erledigt": return { titel: "Erledigt", html: "" };
     default: return null;
@@ -229,7 +219,7 @@ function zeichneDetail() {
     const inh = schrittInhalt(id, r, m), nr = i + 1, idx = i + 1;
     if (!inh) return "";
     const zustand = FERTIG.includes(r.status) || idx <= jetzt ? "fertig" : idx === jetzt + 1 ? "jetzt" : "";
-    return `<div class="schritt ${zustand}"><b>${nr}. ${inh.titel}</b>${zustand === "fertig" && id !== r.status && !["gemeldet", "abholung", "kunde_info"].includes(id) ? "" : inh.html}</div>`;
+    return `<div class="schritt ${zustand}"><b>${nr}. ${inh.titel}</b>${zustand === "fertig" && id !== r.status && !["gemeldet", "abholung"].includes(id) ? "" : inh.html}</div>`;
   }).join("");
   $("inhalt").innerHTML = `
     <div class="detailKopf"><div><h2>${A.icon} ${esc(r.nummer)} <small class="artName">${A.name}</small></h2><span class="status gross" style="--f:${s.farbe}">${s.icon} ${s.name}</span> <small>seit ${datumDe(r.statusSeit?.slice(0, 10))}</small></div>
@@ -252,15 +242,12 @@ function zeichneDetail() {
       </section>
     </div>
     <section class="karte"><h3>✉️ Vorschau der E-Mail an den Lieferanten</h3><p><b>Betreff:</b> ${esc(m.betreff)}</p><pre class="mailVorschau">${esc(m.text)}</pre></section>
-    ${rep && ["zurueck", "kunde_info"].includes(r.status) ? `<section class="karte"><h3>👤 Nachricht an den Kunden</h3><pre class="mailVorschau">${esc(kundenMail(r).text)}</pre></section>` : ""}
     <section class="karte"><h3>🕓 Verlauf</h3><ul class="verlauf">${r.verlauf.slice().reverse().map(v => `<li><small>${new Date(v.zeit).toLocaleString("de-DE")}</small> ${esc(v.text)}</li>`).join("")}</ul>
       <button type="button" class="knopf gefahr klein" id="loeschen">🗑️ Löschen</button></section>`;
   $("zurueck").addEventListener("click", () => zeige("uebersicht"));
   $("bearbeiten").addEventListener("click", () => zeige("bearbeiten", r.id));
   $("mailOutlook")?.addEventListener("click", () => { if (r.status === "neu") { setzeStatus(r, "gemeldet", "E-Mail geöffnet"); setTimeout(zeichneDetail, 300); } });
   $("mailKopieren")?.addEventListener("click", () => kopiere(`${m.betreff}\n\n${m.text}`, "Betreff und Text"));
-  $("kundeKopieren")?.addEventListener("click", () => kopiere(kundenMail(r).text, "Nachricht für den Kunden"));
-  $("kundeMail")?.addEventListener("click", () => { if (r.status === "zurueck") { setzeStatus(r, "kunde_info", "per E-Mail"); setTimeout(zeichneDetail, 300); } });
   $("druckSchein")?.addEventListener("click", () => druckeAbholschein(r));
   $("terminSpeichern")?.addEventListener("click", () => {
     const d = $("abholtermin").value; if (!d) return;
@@ -369,9 +356,6 @@ function zeichneEinstellungen() {
       <label>Erinnern, wenn eine Reparatur länger als … Tage dauert<input name="reparaturTage" type="number" min="1" value="${esc(e.reparaturTage)}"></label>
       <label>Kürzel Artikel-Reklamation<input name="praefix" value="${esc(e.praefix)}" maxlength="6"></label>
       <label>Kürzel Reparaturauftrag<input name="praefixReparatur" value="${esc(e.praefixReparatur)}" maxlength="6"></label>
-      <details class="breit"><summary><b>👤 Nachricht an den Kunden, wenn das Gerät zurück ist</b></summary>
-        <label>Betreff<input name="kundeBetreff" value="${esc(e.kundeBetreff || STANDARD_KUNDE_BETREFF)}"></label>
-        <label>Text<textarea name="kundeText" rows="9">${esc(e.kundeText || STANDARD_KUNDE_TEXT)}</textarea></label></details>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
     <section class="karte"><h3>💾 Datensicherung</h3>

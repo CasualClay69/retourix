@@ -4,7 +4,7 @@
 //  Nichts wird ins Internet geschickt. Sicherung: Einstellungen → Daten speichern / laden.
 // =====================================================
 
-const VERSION = "1.7";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt
+const VERSION = "1.8";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt
 const SPEICHER = "reklamation-daten-v1";
 
 // Zwei Arten: Artikel-Reklamation (Ware zurück an den Lieferanten) und Kunden-Reparaturauftrag (Gerät geht zur Reparatur und zurück zum Kunden)
@@ -20,7 +20,7 @@ const STATUS = [
   { id: "abgeholt",   name: "Abgeholt",                     icon: "🚚", farbe: "#d97706" },
   { id: "kva",        name: "Kosten­voranschlag",       icon: "🧾", farbe: "#db2777" },
   { id: "zurueck",    name: "Zurück im Markt",              icon: "📥", farbe: "#0891b2" },
-  { id: "kunde_info", name: "Kunde benachrichtigt",         icon: "📞", farbe: "#4f46e5" },
+  { id: "kunde_info", name: "Kunde benachrichtigt",         icon: "📞", farbe: "#4f46e5" },   // nur noch für alte Einträge
   { id: "gutschrift", name: "Gutschrift / Ersatz erhalten", icon: "💶", farbe: "#059669" },
   { id: "ausgegeben", name: "An Kunden ausgegeben",         icon: "🤝", farbe: "#047857" },
   { id: "erledigt",   name: "Erledigt",                     icon: "✅", farbe: "#047857" },
@@ -29,7 +29,7 @@ const STATUS = [
 // Ablauf je Art (Reihenfolge der Schritte)
 const ABLAUF = {
   artikel:   ["neu", "gemeldet", "abholung", "abgeholt", "gutschrift", "erledigt"],
-  reparatur: ["neu", "gemeldet", "abholung", "abgeholt", "kva", "zurueck", "kunde_info", "ausgegeben"],
+  reparatur: ["neu", "gemeldet", "abholung", "abgeholt", "kva", "zurueck", "ausgegeben"],
 };
 const FERTIG = ["erledigt", "abgelehnt", "ausgegeben"];
 const istOffen = r => !FERTIG.includes(r.status);
@@ -103,23 +103,11 @@ Mit freundlichen Grüßen
 {firma}
 Tel. {telefon}
 {email}`;
-// Nachricht an den Kunden, wenn das Gerät zurück ist
-const STANDARD_KUNDE_BETREFF = "Ihr Reparaturauftrag {nummer} ist abholbereit";
-const STANDARD_KUNDE_TEXT = `Guten Tag {kundenname},
-
-Ihr Gerät ({geraet}) ist von der Reparatur zurück und liegt für Sie zur Abholung bereit.
-Bitte bringen Sie Ihren Auftragsbeleg mit der Nummer {nummer} mit.
-
-Mit freundlichen Grüßen
-{name}
-{firma}
-Tel. {telefon}`;
 
 function leererStand() {
   return {
     version: 1, zaehler: {},   // Jahr -> laufende Nummer
-    einstellungen: { firma: "", name: "", telefon: "", email: "", abholadresse: "", abholhinweis: "", erinnerungTage: 7, reparaturTage: 21, praefix: "R", praefixReparatur: "RP",
-      kundeBetreff: STANDARD_KUNDE_BETREFF, kundeText: STANDARD_KUNDE_TEXT },
+    einstellungen: { firma: "", name: "", telefon: "", email: "", abholadresse: "", abholhinweis: "", erinnerungTage: 7, reparaturTage: 21, praefix: "R", praefixReparatur: "RP" },
     lieferanten: [], reklamationen: [],
   };
 }
