@@ -358,6 +358,9 @@ function zeichneEinstellungen() {
       <label>Kürzel Reparaturauftrag<input name="praefixReparatur" value="${esc(e.praefixReparatur)}" maxlength="6"></label>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
+    <section class="karte"><h3>🔄 Aktualisieren</h3>
+      <p>Holt die neueste Version von Retourix. Deine Daten bleiben dabei erhalten.</p>
+      <div class="knoepfe"><button type="button" class="knopf haupt" id="aktualisieren">🔄 Aktualisieren</button><small>Du hast <b>v${VERSION}</b></small></div></section>
     <section class="karte"><h3>💾 Datensicherung</h3>
       <p>Alle Daten liegen nur hier im Browser auf diesem Gerät. Speichere ab und zu eine Sicherung (z. B. auf dem Netzlaufwerk) – damit nichts verloren geht, falls der Browser-Speicher gelöscht wird.</p>
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
@@ -380,6 +383,7 @@ function zeichneEinstellungen() {
     Object.assign(stand.einstellungen, f, { erinnerungTage: Number(f.erinnerungTage) || 7, reparaturTage: Number(f.reparaturTage) || 21 });
     speichere(); meldung("💾 Einstellungen gespeichert"); zeichne();
   });
+  $("aktualisieren").addEventListener("click", aktualisiere);
   $("export").addEventListener("click", () => {
     stand.letzteSicherung = new Date().toISOString(); speichere();
     ladeHerunter(`reklamationen-sicherung-${heute()}.json`, JSON.stringify(stand, null, 1), "application/json"); zeichneEinstellungen();
@@ -399,6 +403,22 @@ function zeichneEinstellungen() {
       (r.positionen || []).map(p => `${p.menge}x ${p.artikelnummer} ${p.bezeichnung}`).join(" | "), r.fehler, statusInfo(r.status).name, r.abholtermin ? datumDe(r.abholtermin) : "", r.gutschrift || "", r.kva || ""]));
     ladeHerunter(`reklamationen-${heute()}.csv`, "﻿" + z.map(x => x.map(w => `"${String(w ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n"), "text/csv");
   });
+}
+// Lädt alle Dateien frisch vom Server (am Browser-Zwischenspeicher vorbei) und startet die Seite neu
+async function aktualisiere() {
+  const knopf = $("aktualisieren");
+  knopf.disabled = true; knopf.textContent = "⏳ Wird geprüft …";
+  if (location.protocol === "file:") { location.reload(); return; }
+  try {
+    const t = await (await fetch("js/daten.js", { cache: "reload" })).text();
+    const neu = (t.match(/VERSION = "([^"]+)"/) || [])[1];
+    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/beispiel.js", "js/app.js", "manifest.json", "bilder/qr.svg"]
+      .map(d => fetch(d, { cache: "reload" }).catch(() => null)));
+    if (neu && neu !== VERSION) { meldung(`✨ Neue Version ${neu} wird geladen …`); setTimeout(() => location.reload(), 900); }
+    else { meldung(`✅ Retourix ist aktuell (v${VERSION})`); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren"; }
+  } catch (e) {
+    meldung("Keine Verbindung – bitte später nochmal versuchen.", "fehler"); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren";
+  }
 }
 function ladeHerunter(name, inhalt, typ) {
   const a = document.createElement("a");
