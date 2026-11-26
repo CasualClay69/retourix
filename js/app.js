@@ -79,10 +79,10 @@ function zeichneUebersicht() {
       <div class="filter">${[["offen", "Offen"], ["fertig", "Erledigt"], ["alle", "Alle"]].map(([id, n]) => `<button type="button" data-filter="${id}" class="${filter === id ? "an" : ""}">${n}</button>`).join("")}</div>
       <input type="search" id="suche" placeholder="🔎 Suchen: Nummer, Kunde, Artikel, Seriennr., Lieferant …" value="${esc(suche)}">
     </div>
-    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Nr.</th><th>Status</th></tr></thead><tbody>
+    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Retourennr.</th><th>Status</th></tr></thead><tbody>
       ${liste.map(r => { const s = statusInfo(r.status), a = ARTEN[artVon(r)];
         return `<tr data-detail="${r.id}"><td><b>${esc(r.nummer)}</b></td><td title="${a.name}">${a.icon} ${a.kurz}</td><td>${datumDe(r.datum)}</td><td>${esc(lieferant(r.lieferant)?.name || "–")}</td>
-          <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${artVon(r) === "reparatur" ? `${esc(r.kunde)}${r.reparaturnummer ? `<br><small>${esc(r.reparaturnummer)}</small>` : ""}` : esc(r.retourennummer || r.kunde)}</td>
+          <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${esc(artVon(r) === "reparatur" ? r.kunde : r.retourennummer || r.kunde)}</td>
           <td><span class="status" style="--f:${s.farbe}">${s.icon} ${s.name}</span>${erinIds.has(r.id) ? ` <span class="alt">⏰</span>` : ""}</td></tr>`; }).join("")}
     </tbody></table>` : `<p class="leer">${stand.reklamationen.length ? "Nichts in dieser Ansicht." : "Noch nichts erfasst."}</p>`}`;
   $("suche").addEventListener("input", e => { suche = e.target.value; const pos = e.target.selectionStart; zeichneUebersicht(); const s = $("suche"); s.focus(); s.setSelectionRange(pos, pos); });
@@ -110,7 +110,7 @@ function zeichneFormular(id) {
     <form id="form" class="formular">
       <label>Datum<input type="date" name="datum" value="${esc(r?.datum || heute())}" required></label>
       <label>Lieferant<select name="lieferant" required>${stand.lieferanten.slice().sort((a, b) => a.name.localeCompare(b.name)).map(l => `<option value="${l.id}" ${r?.lieferant === l.id ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
-      ${rep ? `<label>Reparaturnummer<input name="reparaturnummer" id="repNr" value="${esc(r?.reparaturnummer)}" placeholder="3681-xxxxxx-xxxx-xx" inputmode="numeric" autocomplete="off" maxlength="19"></label>
+      ${rep ? `<label>Reparaturnummer<input name="reparaturnummer" id="repNr" value="${esc(r?.reparaturnummer)}" placeholder="3681-xxxxxx-xxxx-xx" inputmode="numeric" autocomplete="off" maxlength="19" required></label>
         <fieldset class="breit kundeBox"><legend>👤 Kunde <small>(bleibt intern)</small></legend>
           <label>Name<input name="kunde" value="${esc(r?.kunde)}" required></label>
           <label>Telefon<input name="kundeTelefon" value="${esc(r?.kundeTelefon)}"></label>
@@ -156,10 +156,12 @@ function zeichneFormular(id) {
       pakete: Number(w("pakete")) || 1, gewicht: w("gewicht"), notiz: w("notiz") };
     if (rep) daten.kunde = w("kunde"); else daten.retourennummer = w("retourennummer");
     if (rep) Object.assign(daten, { reparaturnummer: w("reparaturnummer"), kundeTelefon: w("kundeTelefon"), seriennummer: w("seriennummer"), kaufdatum: w("kaufdatum"), zubehoer: w("zubehoer") });
+    if (rep && stand.reklamationen.some(x => x !== r && x.nummer === daten.reparaturnummer)) { meldung(`Die Reparaturnummer ${daten.reparaturnummer} gibt es schon.`, "fehler"); return; }
+    if (rep) daten.nummer = daten.reparaturnummer;
     let ziel = r;
     if (r) { Object.assign(r, daten); r.verlauf.push({ zeit: new Date().toISOString(), text: "Bearbeitet" }); }
     else {
-      ziel = { id: neueId(), nummer: naechsteNummer(art), erstellt: new Date().toISOString(), status: "neu", statusSeit: new Date().toISOString(),
+      ziel = { id: neueId(), nummer: rep ? daten.nummer : naechsteNummer(art), erstellt: new Date().toISOString(), status: "neu", statusSeit: new Date().toISOString(),
         verlauf: [{ zeit: new Date().toISOString(), text: "Erfasst" }], ...daten };
       stand.reklamationen.push(ziel);
     }
@@ -238,7 +240,7 @@ function zeichneDetail() {
     <div class="spalten">
       <section class="karte"><h3>📋 ${rep ? "Reparaturauftrag" : "Retoure"}</h3><dl>
         <dt>Datum</dt><dd>${datumDe(r.datum)}</dd><dt>Lieferant</dt><dd>${esc(l?.name || "–")}</dd>${rep ? `<dt>Kunde</dt><dd>${esc(r.kunde || "–")}</dd>` : `<dt>Retourennummer</dt><dd>${esc(r.retourennummer || "–")}</dd>${r.kunde ? `<dt>Kunde</dt><dd>${esc(r.kunde)}</dd>` : ""}`}
-        ${rep ? `<dt>Reparaturnummer</dt><dd>${esc(r.reparaturnummer || "–")}</dd><dt>Telefon</dt><dd>${esc(r.kundeTelefon || "–")}</dd>${r.kundeEmail ? `<dt>E-Mail</dt><dd>${esc(r.kundeEmail)}</dd>` : ""}
+        ${rep ? `<dt>Telefon</dt><dd>${esc(r.kundeTelefon || "–")}</dd>${r.kundeEmail ? `<dt>E-Mail</dt><dd>${esc(r.kundeEmail)}</dd>` : ""}
           ${(g => `<dt>Gerät</dt><dd>${esc(g.bezeichnung || "–")}</dd><dt>Unsere Art.-Nr.</dt><dd>${esc(g.artikelnummer || "–")}</dd>
           <dt>Ihre Art.-Nr.</dt><dd>${esc(g.lieferantNr || "–")}</dd><dt>EAN</dt><dd>${esc(g.ean || "–")}</dd>`)((r.positionen || [])[0] || {})}
           <dt>Seriennummer</dt><dd>${esc(r.seriennummer || "–")}</dd><dt>Kaufdatum</dt><dd>${r.kaufdatum ? datumDe(r.kaufdatum) : "–"}</dd><dt>Zubehör</dt><dd>${esc(r.zubehoer || "keins")}</dd>
@@ -336,8 +338,7 @@ function zeichneEinstellungen() {
       <label class="breit">Abholzeiten / Hinweis (Standard)<input name="abholhinweis" value="${esc(e.abholhinweis)}" placeholder="z. B. Abholung Mo–Fr 7–15 Uhr an Tor 3"></label>
       <label>Erinnern, wenn der Lieferant nach … Tagen nicht antwortet<input name="erinnerungTage" type="number" min="1" value="${esc(e.erinnerungTage)}"></label>
       <label>Erinnern, wenn eine Reparatur länger als … Tage dauert<input name="reparaturTage" type="number" min="1" value="${esc(e.reparaturTage)}"></label>
-      <label>Kürzel Retoure<input name="praefix" value="${esc(e.praefix)}" maxlength="6"></label>
-      <label>Kürzel Reparaturauftrag<input name="praefixReparatur" value="${esc(e.praefixReparatur)}" maxlength="6"></label>
+      <label>Kürzel Retoure <small>(R-2026-0001)</small><input name="praefix" value="${esc(e.praefix)}" maxlength="6"></label>
       <div class="breit knoepfe"><button type="submit" class="knopf haupt">💾 Speichern</button></div>
     </form>
     <section class="karte"><h3>🔄 Aktualisieren</h3>
