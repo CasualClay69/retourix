@@ -147,7 +147,8 @@ function zeichneFormular(id) {
   // Reparaturnummer beim Tippen automatisch gliedern: 3681-xxxxxx-xxxx-xx
   $("repNr")?.addEventListener("input", e => {
     const z = e.target.value.replace(/\D/g, "").slice(0, 16), teile = [z.slice(0, 4), z.slice(4, 10), z.slice(10, 14), z.slice(14, 16)].filter(Boolean);
-    e.target.value = teile.join("-");
+    // nach 4, 10 und 14 Ziffern kommt der Strich von selbst (und ein getippter Strich bleibt stehen) – nur beim Löschen nicht
+    e.target.value = teile.join("-") + (e.inputType !== "deleteContentBackward" && [4, 10, 14].includes(z.length) ? "-" : "");
   });
   pos?.addEventListener("click", e => { if (e.target.classList.contains("weg") && pos.children.length > 1) e.target.closest(".position").remove(); });
   $("abbrechen").addEventListener("click", () => (r ? zeige("detail", r.id) : zeige("uebersicht")));
