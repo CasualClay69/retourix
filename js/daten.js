@@ -5,7 +5,7 @@
 //  Nichts wird ins Internet geschickt. Sicherung: Einstellungen → Daten speichern / laden.
 // =====================================================
 
-const VERSION = "2.3";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt
+const VERSION = "2.4";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt · 2.3 „Auf dem Handy öffnen“ und „Vorführen“ entfernt · 2.4 CC beim Lieferanten entfernt
 const SPEICHER = "reklamation-daten-v1";
 
 // Zwei Arten: Retoure (Ware zurück an den Lieferanten) und Kunden-Reparaturauftrag (Gerät geht zur Reparatur und zurück zum Kunden)

@@ -175,7 +175,7 @@ function fuelleVorlage(text, r) {
 }
 function mailFuer(r) {
   const l = lieferant(r.lieferant) || {}, rep = artVon(r) === "reparatur";
-  return { an: l.email || "", cc: l.cc || "",
+  return { an: l.email || "", cc: "",
     betreff: fuelleVorlage((rep ? l.betreffReparatur : l.betreff) || (rep ? STANDARD_REP_BETREFF : STANDARD_BETREFF), r),
     text: fuelleVorlage((rep ? l.vorlageReparatur : l.vorlage) || (rep ? STANDARD_REP_TEXT : STANDARD_TEXT), r) };
 }
@@ -303,7 +303,6 @@ function zeichneLieferanten() {
       <label>Name<input name="name" required value="${esc(l.name)}"></label>
       <label>Unsere Kundennummer dort<input name="kundennummer" value="${esc(l.kundennummer)}"></label>
       <label>E-Mail für Reklamationen<input name="email" type="email" value="${esc(l.email)}" placeholder="reklamation@lieferant.de"></label>
-      <label>CC <small>(mehrere mit Komma)</small><input name="cc" value="${esc(l.cc)}"></label>
       <label>Ansprechpartner<input name="ansprechpartner" value="${esc(l.ansprechpartner)}" placeholder="z. B. Frau Müller"></label>
       <label>Abholhinweis <small>(statt Standard)</small><input name="abholhinweis" value="${esc(l.abholhinweis)}" placeholder="z. B. Abholung nur Di/Do durch Spedition XY"></label>
       <details class="breit" open><summary><b>📦 Vorlage für Retouren</b></summary>
