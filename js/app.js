@@ -397,6 +397,9 @@ function zeichneEinstellungen() {
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
       <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>
+    <section class="karte qrKarte"><img src="bilder/qr.svg" alt="QR-Code zu Retourix" width="180" height="180">
+      <div><h3>📱 Auf dem Handy öffnen</h3><p>Mit der Handy-Kamera scannen – dann öffnet sich Retourix im Browser.<br><a href="https://casualclay69.github.io/retourix/">casualclay69.github.io/retourix</a></p>
+        <p><small>iPhone: in Safari auf „Teilen“ → „Zum Home-Bildschirm“ tippen, dann liegt Retourix wie eine App auf dem Startbildschirm. Die Daten sind auf jedem Gerät getrennt.</small></p></div></section>
     <section class="karte"><h3>🧪 Vorführen</h3>
       <p>Füllt Retourix mit erfundenen Lieferanten, Reklamationen und Reparaturen in verschiedenen Stufen – zum Ausprobieren oder Zeigen. Deine echten Einträge bleiben dabei erhalten.</p>
       <div class="knoepfe"><button type="button" class="knopf" id="bsp">🧪 Beispieldaten laden</button><button type="button" class="knopf gefahr" id="allesWeg">🗑️ Alle Daten löschen</button></div></section>`;
