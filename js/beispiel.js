@@ -9,10 +9,6 @@ function ladeBeispieldaten() {
   const tag = n => new Date(Date.now() - n * 86400000).toISOString();
   const d = n => tag(n).slice(0, 10);
   const e = stand.einstellungen;
-  if (!e.name) e.name = "Max Muster";
-  if (!e.telefon) e.telefon = "01234 56789-0";
-  if (!e.email) e.email = "max.muster@example.de";
-  if (!e.abholadresse) e.abholadresse = "Baumarkt Musterstadt\nWarenannahme\nMusterstraße 1\n12345 Musterstadt";
   if (!e.abholhinweis) e.abholhinweis = "Abholung Mo–Fr 7–15 Uhr an Tor 3";
 
   const L = [
@@ -60,8 +56,6 @@ function ladeBeispieldaten() {
   speichere();
 }
 function loescheAlles() {
-  const firma = stand.einstellungen.firma;
   stand = leererStand();
-  stand.einstellungen.firma = firma;
   speichere();
 }

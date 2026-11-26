@@ -28,7 +28,6 @@ function zeige(s, id = null) {
   window.scrollTo(0, 0);
 }
 function zeichne() {
-  $("firmaKopf").innerHTML = esc(stand.einstellungen.firma || "").replace(/(baumarkt)/i, '<span class="gruen">$1</span>');
   ({ uebersicht: zeichneUebersicht, neu: () => zeichneFormular(null), bearbeiten: () => zeichneFormular(detailId), detail: zeichneDetail,
      lieferanten: zeichneLieferanten, einstellungen: zeichneEinstellungen })[seite]();
   beschrifteTabellen();
@@ -68,7 +67,7 @@ function zeichneUebersicht() {
     .filter(r => !suche || JSON.stringify([r.nummer, r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer, r.fehler, r.positionen, lieferant(r.lieferant)?.name]).toLowerCase().includes(suche.toLowerCase()))
     .sort((a, b) => (b.erstellt || "").localeCompare(a.erstellt || ""));
   $("inhalt").innerHTML = `
-    ${!stand.einstellungen.name || !stand.einstellungen.abholadresse ? `<div class="hinweisBox">👋 Willkommen! Trag zuerst unter <a href="#" data-geh="einstellungen">⚙️ Einstellungen</a> deinen Namen und die Abholadresse ein und lege unter <a href="#" data-geh="lieferanten">🏭 Lieferanten</a> deine Lieferanten an.<div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf klein" id="bspLaden">🧪 Erst mal ausprobieren: Beispieldaten laden</button></div></div>` : ""}
+    ${!stand.lieferanten.length ? `<div class="hinweisBox">👋 Willkommen! Lege zuerst unter <a href="#" data-geh="lieferanten">🏭 Lieferanten</a> deine Lieferanten an.<div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf klein" id="bspLaden">🧪 Erst mal ausprobieren: Beispieldaten laden</button></div></div>` : ""}
     ${erin.length ? `<div class="hinweisBox warnung">⏰ <b>Bitte kümmern:</b><ul class="erinnerung">${erin.map(x => `<li><a href="#" data-detail="${x.r.id}">${ARTEN[artVon(x.r)].icon} ${esc(x.r.nummer)}</a> – ${esc(x.text)}</li>`).join("")}</ul></div>` : ""}
     <div class="neuKnoepfe">
       <button type="button" class="knopf haupt gross" data-geh="neu" data-art="artikel">📦 Neue Retoure <small>${offenAnz("artikel")} offen</small></button>
@@ -167,12 +166,12 @@ function fuelleVorlage(text, r) {
     "{anrede}": /^Frau\s/i.test(ap) ? `Sehr geehrte ${ap}` : /^Herr\s/i.test(ap) ? `Sehr geehrter ${ap}` : "Sehr geehrte Damen und Herren",
     "{positionen}": (r.positionen || []).map(p => `- ${p.menge} × ${p.artikelnummer ? `${p.artikelnummer} ` : ""}${p.bezeichnung}`).join("\n"),
     "{lieferschein}": r.lieferschein || "–", "{fehler}": r.fehler || "–", "{pakete}": r.pakete || 1, "{gewicht}": r.gewicht || "–",
-    "{abholadresse}": e.abholadresse || "", "{abholhinweis}": l.abholhinweis || e.abholhinweis || "",
-    "{name}": e.name || "", "{firma}": e.firma || "", "{telefon}": e.telefon || "", "{email}": e.email || "",
+    "{abholadresse}": "", "{abholhinweis}": l.abholhinweis || e.abholhinweis || "",
+    "{name}": "", "{firma}": "", "{telefon}": "", "{email}": "",   // Absender kommt aus der Outlook-Signatur
     "{geraet}": geraet || "–", "{seriennummer}": r.seriennummer || "–", "{kaufdatum}": r.kaufdatum ? datumDe(r.kaufdatum) : "–", "{beleg}": r.beleg || "–",
     "{garantie}": r.garantie || "–", "{kostenlimit}": r.kostenlimit || "–", "{zubehoer}": r.zubehoer || "keins", "{kundenname}": r.kunde || "",
   };
-  return text.replace(/\{[a-z_]+\}/g, k => (k in werte ? werte[k] : k));
+  return text.replace(/\{[a-z_]+\}/g, k => (k in werte ? werte[k] : k)).replace(/(\n[ \t]*(Tel\.)?[ \t]*)+$/, "").replace(/\n{3,}/g, "\n\n");
 }
 function mailFuer(r) {
   const l = lieferant(r.lieferant) || {}, rep = artVon(r) === "reparatur";
@@ -270,7 +269,7 @@ function zeichneDetail() {
 }
 
 // ===================== DRUCKEN =====================
-const druckKopf = () => { const e = stand.einstellungen; return `<div class="dKopf">${LOGO_SVG}<div><b>${esc(e.firma)}</b><br>${zeilen(e.abholadresse)}</div></div>`; };
+const druckKopf = () => `<div class="dKopf">${LOGO_SVG}<div><b>Retourix</b><br>Retouren &amp; Reparaturen</div></div>`;
 const artikelTabelle = r => `<table class="dTab"><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Menge</th></tr>${(r.positionen || []).map(p => `<tr><td>${esc(p.artikelnummer)}</td><td>${esc(p.bezeichnung)}</td><td>${esc(p.menge)}</td></tr>`).join("")}</table>`;
 function druckeAbholschein(r) {
   const l = lieferant(r.lieferant) || {}, e = stand.einstellungen, n = Math.max(1, Number(r.pakete) || 1), rep = artVon(r) === "reparatur";
@@ -280,11 +279,11 @@ function druckeAbholschein(r) {
         <tr><th>Unsere Kd.-Nr.</th><td>${esc(l.kundennummer || "–")}</td><th>${rep ? "Seriennummer" : "Lieferschein"}</th><td>${esc((rep ? r.seriennummer : r.lieferschein) || "–")}</td></tr>
         <tr><th>Pakete</th><td>${n}</td><th>Gewicht</th><td>${esc(r.gewicht || "–")} kg</td></tr>
         ${rep ? `<tr><th>Abrechnung</th><td>${esc(r.garantie || "–")}</td><th>Kostenlimit</th><td>${esc(r.kostenlimit || "–")}</td></tr><tr><th>Zubehör</th><td colspan="3">${esc(r.zubehoer || "keins")}</td></tr>` : ""}
-        <tr><th>Abholtermin</th><td>${r.abholtermin ? datumDe(r.abholtermin) : "________________"}</td><th>Ansprechpartner</th><td>${esc(e.name)} ${e.telefon ? `· ${esc(e.telefon)}` : ""}</td></tr></table>
+        <tr><th>Abholtermin</th><td colspan="3">${r.abholtermin ? datumDe(r.abholtermin) : "________________"}</td></tr></table>
       <h2>${rep ? "Gerät" : "Artikel"}</h2>${artikelTabelle(r)}
       <h2>${rep ? "Fehlerbeschreibung" : "Grund der Retoure"}</h2><p>${zeilen(r.fehler)}</p>
-      ${rep ? `<p><b>Bitte nach der Reparatur zurück an die obige Adresse – Auftragsnummer ${esc(r.nummer)} angeben.</b></p>` : ""}
-      <div class="dUnterschrift"><div>Übergeben (${esc(e.firma)}): ______________________</div><div>Abgeholt (Fahrer): ______________________</div><div>Datum / Uhrzeit: ______________________</div></div>
+      ${rep ? `<p><b>Bitte nach der Reparatur an uns zurück – Auftragsnummer ${esc(r.nummer)} angeben.</b></p>` : ""}
+      <div class="dUnterschrift"><div>Übergeben (Markt): ______________________</div><div>Abgeholt (Fahrer): ______________________</div><div>Datum / Uhrzeit: ______________________</div></div>
     </section>
     ${Array.from({ length: n }, (_, i) => `<section class="dSeite dAufkleber">${druckKopf()}<div class="aGross">${rep ? "REPARATUR" : "RETOURE"}</div><div class="aNummer">${esc(r.nummer)}</div>
       <div class="aZeile">an: <b>${esc(l.name || "")}</b></div><div class="aZeile">Paket <b>${i + 1} von ${n}</b></div>
@@ -349,9 +348,6 @@ function zeichneEinstellungen() {
   const e = stand.einstellungen;
   $("inhalt").innerHTML = `<h2>⚙️ Einstellungen</h2>
     <form id="eForm" class="formular karte">
-      <label>Firma<input name="firma" value="${esc(e.firma)}"></label><label>Dein Name<input name="name" value="${esc(e.name)}"></label>
-      <label>Telefon<input name="telefon" value="${esc(e.telefon)}"></label><label>Deine E-Mail<input name="email" type="email" value="${esc(e.email)}"></label>
-      <label class="breit">Abholadresse<textarea name="abholadresse" rows="3" placeholder="Firma&#10;Straße Nr.&#10;PLZ Ort">${esc(e.abholadresse)}</textarea></label>
       <label class="breit">Abholzeiten / Hinweis (Standard)<input name="abholhinweis" value="${esc(e.abholhinweis)}" placeholder="z. B. Abholung Mo–Fr 7–15 Uhr an Tor 3"></label>
       <label>Erinnern, wenn der Lieferant nach … Tagen nicht antwortet<input name="erinnerungTage" type="number" min="1" value="${esc(e.erinnerungTage)}"></label>
       <label>Erinnern, wenn eine Reparatur länger als … Tage dauert<input name="reparaturTage" type="number" min="1" value="${esc(e.reparaturTage)}"></label>

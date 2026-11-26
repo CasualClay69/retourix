@@ -5,7 +5,7 @@
 //  Nichts wird ins Internet geschickt. Sicherung: Einstellungen → Daten speichern / laden.
 // =====================================================
 
-const VERSION = "2.1";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright
+const VERSION = "2.2";   // 1.0 Start · 1.1 zwei Arten · 1.2 Name Retourix · 1.3 neues Logo + Versionsanzeige · 1.4 Handy-Ansicht, Beispieldaten, App-Symbol · 1.5 Link unten · 1.6 QR-Code in den Einstellungen · 1.7 Kundenbeleg entfernt · 1.8 Kunde benachrichtigen entfernt · 1.9 Aktualisieren-Knopf · 2.0 Artikel-Reklamation heißt jetzt Retoure · 2.1 Copyright · 2.2 Firma/Name/Telefon/E-Mail/Abholadresse aus den Einstellungen entfernt
 const SPEICHER = "reklamation-daten-v1";
 
 // Zwei Arten: Retoure (Ware zurück an den Lieferanten) und Kunden-Reparaturauftrag (Gerät geht zur Reparatur und zurück zum Kunden)
@@ -41,8 +41,7 @@ const PLATZHALTER = [
   ["{nummer}", "Reklamationsnummer"], ["{datum}", "Datum der Reklamation"], ["{kundennummer}", "Unsere Kundennummer beim Lieferanten"],
   ["{anrede}", "Anrede (Sehr geehrte Frau …/Herr … oder Damen und Herren)"], ["{positionen}", "Liste aller Artikel mit Menge"],
   ["{lieferschein}", "Lieferschein-/Rechnungsnummer"], ["{fehler}", "Fehlerbeschreibung"], ["{pakete}", "Anzahl Pakete"],
-  ["{gewicht}", "Gewicht in kg"], ["{abholadresse}", "Abholadresse"], ["{abholhinweis}", "Abholzeiten / Hinweise"],
-  ["{name}", "Dein Name"], ["{firma}", "Firmenname"], ["{telefon}", "Deine Telefonnummer"], ["{email}", "Deine E-Mail-Adresse"],
+  ["{gewicht}", "Gewicht in kg"], ["{abholhinweis}", "Abholzeiten / Hinweise"],
   ["{geraet}", "Reparatur: Gerät (Artikelnr. und Bezeichnung)"], ["{seriennummer}", "Reparatur: Seriennummer"], ["{kaufdatum}", "Reparatur: Kaufdatum"],
   ["{beleg}", "Reparatur: Kassenbon / Rechnung"], ["{garantie}", "Reparatur: Garantie / Kulanz / kostenpflichtig"], ["{kostenlimit}", "Reparatur: Kostenlimit"],
   ["{zubehoer}", "Reparatur: mitgegebenes Zubehör"], ["{kundenname}", "Name des Kunden (nur wenn du ihn mitschicken willst)"],
@@ -63,17 +62,12 @@ Artikel:
 Fehlerbeschreibung:
 {fehler}
 
-Die Ware steht zur Abholung bereit ({pakete} Paket(e), ca. {gewicht} kg):
-{abholadresse}
+Die Ware steht bei uns zur Abholung bereit ({pakete} Paket(e), ca. {gewicht} kg).
 {abholhinweis}
 
 Bitte bestätigen Sie uns die Reklamation und teilen Sie uns den Abholtermin mit.
 
-Mit freundlichen Grüßen
-{name}
-{firma}
-Tel. {telefon}
-{email}`;
+Mit freundlichen Grüßen`;
 
 const STANDARD_REP_BETREFF = "Reparaturauftrag {nummer} – Kd.-Nr. {kundennummer}";
 const STANDARD_REP_TEXT = `{anrede},
@@ -93,22 +87,17 @@ Mitgegebenes Zubehör: {zubehoer}
 Fehlerbeschreibung:
 {fehler}
 
-Das Gerät steht zur Abholung bereit ({pakete} Paket(e), ca. {gewicht} kg):
-{abholadresse}
+Das Gerät steht bei uns zur Abholung bereit ({pakete} Paket(e), ca. {gewicht} kg).
 {abholhinweis}
 
-Bitte senden Sie das Gerät nach der Reparatur an die obige Adresse zurück und geben Sie dabei unsere Auftragsnummer {nummer} an.
+Bitte senden Sie das Gerät nach der Reparatur an uns zurück und geben Sie dabei unsere Auftragsnummer {nummer} an.
 
-Mit freundlichen Grüßen
-{name}
-{firma}
-Tel. {telefon}
-{email}`;
+Mit freundlichen Grüßen`;
 
 function leererStand() {
   return {
     version: 1, zaehler: {},   // Jahr -> laufende Nummer
-    einstellungen: { firma: "", name: "", telefon: "", email: "", abholadresse: "", abholhinweis: "", erinnerungTage: 7, reparaturTage: 21, praefix: "R", praefixReparatur: "RP" },
+    einstellungen: { abholhinweis: "", erinnerungTage: 7, reparaturTage: 21, praefix: "R", praefixReparatur: "RP" },
     lieferanten: [], reklamationen: [],
   };
 }
