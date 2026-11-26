@@ -64,7 +64,7 @@ function zeichneUebersicht() {
   const liste = stand.reklamationen
     .filter(r => artFilter === "alle" || artVon(r) === artFilter)
     .filter(r => filter === "alle" || (filter === "offen" ? istOffen(r) : !istOffen(r)))
-    .filter(r => !suche || JSON.stringify([r.nummer, r.retourennummer, (r.positionen || []).map(p => [p.lieferantNr, p.ean]), r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer, r.fehler, r.positionen, lieferant(r.lieferant)?.name]).toLowerCase().includes(suche.toLowerCase()))
+    .filter(r => !suche || JSON.stringify([r.nummer, r.retourennummer, r.reparaturnummer, (r.positionen || []).map(p => [p.lieferantNr, p.ean]), r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer, r.fehler, r.positionen, lieferant(r.lieferant)?.name]).toLowerCase().includes(suche.toLowerCase()))
     .sort((a, b) => (b.erstellt || "").localeCompare(a.erstellt || ""));
   $("inhalt").innerHTML = `
     ${!stand.lieferanten.length ? `<div class="hinweisBox">👋 Willkommen! Lege zuerst unter <a href="#" data-geh="lieferanten">🏭 Lieferanten</a> deine Lieferanten an.<div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf klein" id="bspLaden">🧪 Erst mal ausprobieren: Beispieldaten laden</button></div></div>` : ""}
@@ -79,10 +79,10 @@ function zeichneUebersicht() {
       <div class="filter">${[["offen", "Offen"], ["fertig", "Erledigt"], ["alle", "Alle"]].map(([id, n]) => `<button type="button" data-filter="${id}" class="${filter === id ? "an" : ""}">${n}</button>`).join("")}</div>
       <input type="search" id="suche" placeholder="🔎 Suchen: Nummer, Kunde, Artikel, Seriennr., Lieferant …" value="${esc(suche)}">
     </div>
-    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Retourennr.</th><th>Status</th></tr></thead><tbody>
+    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Nr.</th><th>Status</th></tr></thead><tbody>
       ${liste.map(r => { const s = statusInfo(r.status), a = ARTEN[artVon(r)];
         return `<tr data-detail="${r.id}"><td><b>${esc(r.nummer)}</b></td><td title="${a.name}">${a.icon} ${a.kurz}</td><td>${datumDe(r.datum)}</td><td>${esc(lieferant(r.lieferant)?.name || "–")}</td>
-          <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${esc(artVon(r) === "reparatur" ? r.kunde : r.retourennummer || r.kunde)}</td>
+          <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${artVon(r) === "reparatur" ? `${esc(r.kunde)}${r.reparaturnummer ? `<br><small>${esc(r.reparaturnummer)}</small>` : ""}` : esc(r.retourennummer || r.kunde)}</td>
           <td><span class="status" style="--f:${s.farbe}">${s.icon} ${s.name}</span>${erinIds.has(r.id) ? ` <span class="alt">⏰</span>` : ""}</td></tr>`; }).join("")}
     </tbody></table>` : `<p class="leer">${stand.reklamationen.length ? "Nichts in dieser Ansicht." : "Noch nichts erfasst."}</p>`}`;
   $("suche").addEventListener("input", e => { suche = e.target.value; const pos = e.target.selectionStart; zeichneUebersicht(); const s = $("suche"); s.focus(); s.setSelectionRange(pos, pos); });
@@ -110,7 +110,8 @@ function zeichneFormular(id) {
     <form id="form" class="formular">
       <label>Datum<input type="date" name="datum" value="${esc(r?.datum || heute())}" required></label>
       <label>Lieferant<select name="lieferant" required>${stand.lieferanten.slice().sort((a, b) => a.name.localeCompare(b.name)).map(l => `<option value="${l.id}" ${r?.lieferant === l.id ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
-      ${rep ? `<fieldset class="breit kundeBox"><legend>👤 Kunde <small>(bleibt intern)</small></legend>
+      ${rep ? `<label>Reparaturnummer<input name="reparaturnummer" id="repNr" value="${esc(r?.reparaturnummer)}" placeholder="3681-xxxxxx-xxxx-xx" inputmode="numeric" autocomplete="off" maxlength="19"></label>
+        <fieldset class="breit kundeBox"><legend>👤 Kunde <small>(bleibt intern)</small></legend>
           <label>Name<input name="kunde" value="${esc(r?.kunde)}" required></label>
           <label>Telefon<input name="kundeTelefon" value="${esc(r?.kundeTelefon)}"></label>
         </fieldset>`
@@ -136,6 +137,11 @@ function zeichneFormular(id) {
   for (const b of document.querySelectorAll("[data-neuart]")) b.addEventListener("click", () => { neueArt = b.dataset.neuart; zeichneFormular(null); });
   const pos = $("positionen");
   $("plusPosition")?.addEventListener("click", () => { pos.insertAdjacentHTML("beforeend", positionZeile()); });
+  // Reparaturnummer beim Tippen automatisch gliedern: 3681-xxxxxx-xxxx-xx
+  $("repNr")?.addEventListener("input", e => {
+    const z = e.target.value.replace(/\D/g, "").slice(0, 16), teile = [z.slice(0, 4), z.slice(4, 10), z.slice(10, 14), z.slice(14, 16)].filter(Boolean);
+    e.target.value = teile.join("-");
+  });
   pos?.addEventListener("click", e => { if (e.target.classList.contains("weg") && pos.children.length > 1) e.target.closest(".position").remove(); });
   $("abbrechen").addEventListener("click", () => (r ? zeige("detail", r.id) : zeige("uebersicht")));
   $("form").addEventListener("submit", e => {
@@ -149,7 +155,7 @@ function zeichneFormular(id) {
     const daten = { art, datum: w("datum"), lieferant: w("lieferant"), lieferschein: w("lieferschein"), positionen, fehler: w("fehler"),
       pakete: Number(w("pakete")) || 1, gewicht: w("gewicht"), notiz: w("notiz") };
     if (rep) daten.kunde = w("kunde"); else daten.retourennummer = w("retourennummer");
-    if (rep) Object.assign(daten, { kundeTelefon: w("kundeTelefon"), seriennummer: w("seriennummer"), kaufdatum: w("kaufdatum"), zubehoer: w("zubehoer") });
+    if (rep) Object.assign(daten, { reparaturnummer: w("reparaturnummer"), kundeTelefon: w("kundeTelefon"), seriennummer: w("seriennummer"), kaufdatum: w("kaufdatum"), zubehoer: w("zubehoer") });
     let ziel = r;
     if (r) { Object.assign(r, daten); r.verlauf.push({ zeit: new Date().toISOString(), text: "Bearbeitet" }); }
     else {
@@ -170,7 +176,7 @@ function fuelleVorlage(text, r) {
     "{nummer}": r.nummer, "{datum}": datumDe(r.datum), "{kundennummer}": l.kundennummer || "–",
     "{anrede}": /^Frau\s/i.test(ap) ? `Sehr geehrte ${ap}` : /^Herr\s/i.test(ap) ? `Sehr geehrter ${ap}` : "Sehr geehrte Damen und Herren",
     "{positionen}": (r.positionen || []).map(p => `- ${p.menge} × ${p.artikelnummer ? `${p.artikelnummer} ` : ""}${p.bezeichnung}`).join("\n"),
-    "{lieferschein}": r.lieferschein || "–", "{retourennummer}": r.retourennummer || "–", "{fehler}": r.fehler || "–", "{pakete}": r.pakete || 1, "{gewicht}": r.gewicht || "–",
+    "{lieferschein}": r.lieferschein || "–", "{retourennummer}": r.retourennummer || "–", "{reparaturnummer}": r.reparaturnummer || "–", "{fehler}": r.fehler || "–", "{pakete}": r.pakete || 1, "{gewicht}": r.gewicht || "–",
     "{abholadresse}": "", "{abholhinweis}": l.abholhinweis || e.abholhinweis || "",
     "{name}": "", "{firma}": "", "{telefon}": "", "{email}": "",   // Absender kommt aus der Outlook-Signatur
     "{geraet}": geraet || "–", "{seriennummer}": r.seriennummer || "–", "{kaufdatum}": r.kaufdatum ? datumDe(r.kaufdatum) : "–", "{beleg}": r.beleg || "–",
@@ -232,7 +238,7 @@ function zeichneDetail() {
     <div class="spalten">
       <section class="karte"><h3>📋 ${rep ? "Reparaturauftrag" : "Retoure"}</h3><dl>
         <dt>Datum</dt><dd>${datumDe(r.datum)}</dd><dt>Lieferant</dt><dd>${esc(l?.name || "–")}</dd>${rep ? `<dt>Kunde</dt><dd>${esc(r.kunde || "–")}</dd>` : `<dt>Retourennummer</dt><dd>${esc(r.retourennummer || "–")}</dd>${r.kunde ? `<dt>Kunde</dt><dd>${esc(r.kunde)}</dd>` : ""}`}
-        ${rep ? `<dt>Telefon</dt><dd>${esc(r.kundeTelefon || "–")}</dd>${r.kundeEmail ? `<dt>E-Mail</dt><dd>${esc(r.kundeEmail)}</dd>` : ""}
+        ${rep ? `<dt>Reparaturnummer</dt><dd>${esc(r.reparaturnummer || "–")}</dd><dt>Telefon</dt><dd>${esc(r.kundeTelefon || "–")}</dd>${r.kundeEmail ? `<dt>E-Mail</dt><dd>${esc(r.kundeEmail)}</dd>` : ""}
           ${(g => `<dt>Gerät</dt><dd>${esc(g.bezeichnung || "–")}</dd><dt>Unsere Art.-Nr.</dt><dd>${esc(g.artikelnummer || "–")}</dd>
           <dt>Ihre Art.-Nr.</dt><dd>${esc(g.lieferantNr || "–")}</dd><dt>EAN</dt><dd>${esc(g.ean || "–")}</dd>`)((r.positionen || [])[0] || {})}
           <dt>Seriennummer</dt><dd>${esc(r.seriennummer || "–")}</dd><dt>Kaufdatum</dt><dd>${r.kaufdatum ? datumDe(r.kaufdatum) : "–"}</dd><dt>Zubehör</dt><dd>${esc(r.zubehoer || "keins")}</dd>
@@ -363,8 +369,8 @@ function zeichneEinstellungen() {
     } catch (e) { meldung("Das ist keine gültige Sicherungsdatei.", "fehler"); }
   });
   $("csv").addEventListener("click", () => {
-    const kopf = ["Nummer", "Art", "Datum", "Lieferant", "Retourennummer", "Kunde", "Telefon", "Lieferschein", "Seriennummer", "Artikel / Gerät", "Fehler", "Status", "Abholtermin", "Gutschrift", "KVA"];
-    const z = [kopf].concat(stand.reklamationen.map(r => [r.nummer, ARTEN[artVon(r)].kurz, datumDe(r.datum), lieferant(r.lieferant)?.name || "", r.retourennummer, r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer,
+    const kopf = ["Nummer", "Art", "Datum", "Lieferant", "Retourennummer", "Reparaturnummer", "Kunde", "Telefon", "Lieferschein", "Seriennummer", "Artikel / Gerät", "Fehler", "Status", "Abholtermin", "Gutschrift", "KVA"];
+    const z = [kopf].concat(stand.reklamationen.map(r => [r.nummer, ARTEN[artVon(r)].kurz, datumDe(r.datum), lieferant(r.lieferant)?.name || "", r.retourennummer, r.reparaturnummer, r.kunde, r.kundeTelefon, r.lieferschein, r.seriennummer,
       (r.positionen || []).map(p => `${p.menge}x ${p.artikelnummer} ${p.bezeichnung}`).join(" | "), r.fehler, statusInfo(r.status).name, r.abholtermin ? datumDe(r.abholtermin) : "", r.gutschrift || "", r.kva || ""]));
     ladeHerunter(`reklamationen-${heute()}.csv`, "﻿" + z.map(x => x.map(w => `"${String(w ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n"), "text/csv");
   });
