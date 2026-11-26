@@ -68,6 +68,8 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 60px; }
 .tabelle tbody tr[data-detail] { cursor: pointer; } .tabelle tbody tr[data-detail]:hover { background: #fff5f6; }
 .tabelle.klein { box-shadow: none; margin: 10px 0; } .tabelle.klein td, .tabelle.klein th { padding: 6px 10px; }
 .status { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: var(--f); background: color-mix(in srgb, var(--f) 12%, white); white-space: nowrap; }
+.loeschZelle { width: 1%; text-align: right; }
+.tabelle tbody tr[data-detail] td:first-child { white-space: nowrap; }
 .status.gross { font-size: 0.95rem; padding: 5px 12px; }
 .alt { color: #c2410c; font-size: 0.8rem; font-weight: 700; }
 
@@ -122,6 +124,7 @@ dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; 
   .tabelle:not(.klein) td:first-child { grid-column: 1 / -1; font-size: 1.05rem; }
   .tabelle:not(.klein) td:first-child::before { display: none; }
   .tabelle:not(.klein) td:last-child:not([data-l]) { grid-column: 1 / -1; }
+  .tabelle:not(.klein) td.loeschZelle { width: auto; text-align: right; border-top: 1px solid #f1f2f4; padding-top: 6px; }
   .detailKopf .knoepfe { width: 100%; } .detailKopf .knoepfe .knopf { flex: 1; justify-content: center; }
   dl { grid-template-columns: 110px 1fr; }
   .karte { padding: 14px; }

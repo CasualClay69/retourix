@@ -79,14 +79,21 @@ function zeichneUebersicht() {
       <div class="filter">${[["offen", "Offen"], ["fertig", "Erledigt"], ["alle", "Alle"]].map(([id, n]) => `<button type="button" data-filter="${id}" class="${filter === id ? "an" : ""}">${n}</button>`).join("")}</div>
       <input type="search" id="suche" placeholder="🔎 Suchen: Nummer, Kunde, Artikel, Seriennr., Lieferant …" value="${esc(suche)}">
     </div>
-    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Retourennr.</th><th>Status</th></tr></thead><tbody>
+    ${liste.length ? `<table class="tabelle"><thead><tr><th>Nummer</th><th>Art</th><th>Datum</th><th>Lieferant</th><th>Artikel / Gerät</th><th>Kunde / Retourennr.</th><th>Status</th><th></th></tr></thead><tbody>
       ${liste.map(r => { const s = statusInfo(r.status), a = ARTEN[artVon(r)];
         return `<tr data-detail="${r.id}"><td><b>${esc(r.nummer)}</b></td><td title="${a.name}">${a.icon} ${a.kurz}</td><td>${datumDe(r.datum)}</td><td>${esc(lieferant(r.lieferant)?.name || "–")}</td>
           <td>${esc((r.positionen || []).map(p => `${p.menge}× ${p.bezeichnung}`).join(", ").slice(0, 60))}</td><td>${esc(artVon(r) === "reparatur" ? r.kunde : r.retourennummer || r.kunde)}</td>
-          <td><span class="status" style="--f:${s.farbe}">${s.icon} ${s.name}</span>${erinIds.has(r.id) ? ` <span class="alt">⏰</span>` : ""}</td></tr>`; }).join("")}
+          <td><span class="status" style="--f:${s.farbe}">${s.icon} ${s.name}</span>${erinIds.has(r.id) ? ` <span class="alt">⏰</span>` : ""}</td>
+          <td class="loeschZelle"><button type="button" class="knopf klein gefahr" data-loeschen="${r.id}" title="Löschen" aria-label="${esc(r.nummer)} löschen">🗑️</button></td></tr>`; }).join("")}
     </tbody></table>` : `<p class="leer">${stand.reklamationen.length ? "Nichts in dieser Ansicht." : "Noch nichts erfasst."}</p>`}`;
   $("suche").addEventListener("input", e => { suche = e.target.value; const pos = e.target.selectionStart; zeichneUebersicht(); const s = $("suche"); s.focus(); s.setSelectionRange(pos, pos); });
   beschrifteTabellen();
+  for (const b of document.querySelectorAll("[data-loeschen]")) b.addEventListener("click", e => {
+    e.stopPropagation();
+    const r = reklamation(b.dataset.loeschen); if (!r) return;
+    if (!confirm(`${ARTEN[artVon(r)].name} ${r.nummer} wirklich löschen? Das geht nicht rückgängig.`)) return;
+    stand.reklamationen = stand.reklamationen.filter(x => x.id !== r.id); speichere(); meldung(`🗑️ ${r.nummer} gelöscht`); zeichneUebersicht();
+  });
   for (const b of document.querySelectorAll("[data-filter]")) b.addEventListener("click", () => { filter = b.dataset.filter; zeichneUebersicht(); });
   $("bspLaden")?.addEventListener("click", () => { ladeBeispieldaten(); meldung("🧪 Beispieldaten geladen"); zeichne(); });
   for (const b of document.querySelectorAll("[data-artfilter]")) b.addEventListener("click", () => { artFilter = b.dataset.artfilter; zeichneUebersicht(); });
