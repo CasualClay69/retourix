@@ -1,0 +1,66 @@
+"use strict";
+// =====================================================
+//  BEISPIELDATEN – nur zum Vorführen. Alles erfunden.
+//  Einstellungen → „Beispieldaten laden“ / „Alle Daten löschen“
+// =====================================================
+
+function ladeBeispieldaten() {
+  const tag = n => new Date(Date.now() - n * 86400000).toISOString();
+  const d = n => tag(n).slice(0, 10);
+  const e = stand.einstellungen;
+  if (!e.name) e.name = "Max Muster";
+  if (!e.telefon) e.telefon = "01234 56789-0";
+  if (!e.email) e.email = "max.muster@example.de";
+  if (!e.abholadresse) e.abholadresse = "Baumarkt Musterstadt\nWarenannahme\nMusterstraße 1\n12345 Musterstadt";
+  if (!e.abholhinweis) e.abholhinweis = "Abholung Mo–Fr 7–15 Uhr an Tor 3";
+
+  const L = [
+    { id: "bsp-l1", name: "Beispiel Werkzeug GmbH", kundennummer: "KD-100234", email: "reklamation@example.com", cc: "", ansprechpartner: "Frau Schmidt", abholhinweis: "" },
+    { id: "bsp-l2", name: "Muster Gartengeräte AG", kundennummer: "40-77812", email: "service@example.org", cc: "", ansprechpartner: "Herr Weber", abholhinweis: "Abholung durch Spedition, nur Di und Do" },
+    { id: "bsp-l3", name: "Demo Farben & Lacke KG", kundennummer: "FL-5531", email: "retoure@example.net", cc: "", ansprechpartner: "", abholhinweis: "" },
+  ];
+  const verlauf = (...schritte) => schritte.map(([n, text]) => ({ zeit: tag(n), text }));
+  const j = new Date().getFullYear();
+  const R = [
+    { id: "bsp-r1", art: "artikel", nummer: `R-${j}-0901`, datum: d(1), lieferant: "bsp-l1", kunde: "", lieferschein: "LS 884512",
+      positionen: [{ artikelnummer: "4711001", bezeichnung: "Akku-Bohrschrauber 18 V", menge: 3 }], fehler: "Gehäuse bei Anlieferung gebrochen (Transportschaden).",
+      pakete: 1, gewicht: "6", notiz: "", status: "neu", statusSeit: tag(1), erstellt: tag(1), verlauf: verlauf([1, "Erfasst"]) },
+    { id: "bsp-r2", art: "artikel", nummer: `R-${j}-0902`, datum: d(12), lieferant: "bsp-l3", kunde: "Frau Beispiel", lieferschein: "RE 2024-5520",
+      positionen: [{ artikelnummer: "5520300", bezeichnung: "Wandfarbe weiß 10 l", menge: 4 }, { artikelnummer: "5520310", bezeichnung: "Wandfarbe weiß 5 l", menge: 2 }],
+      fehler: "Farbe klumpig, Charge 23-118.", pakete: 2, gewicht: "70", notiz: "Kundin hat Ersatz bekommen.", status: "gemeldet", statusSeit: tag(10), erstellt: tag(12),
+      verlauf: verlauf([12, "Erfasst"], [10, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"]) },
+    { id: "bsp-r3", art: "artikel", nummer: `R-${j}-0903`, datum: d(6), lieferant: "bsp-l2", kunde: "", lieferschein: "LS 77120",
+      positionen: [{ artikelnummer: "6610045", bezeichnung: "Gartenschlauch 25 m", menge: 10 }], fehler: "Schläuche undicht an der Kupplung.",
+      pakete: 1, gewicht: "18", notiz: "", status: "abholung", abholtermin: d(-2), statusSeit: tag(3), erstellt: tag(6),
+      verlauf: verlauf([6, "Erfasst"], [5, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"], [3, `Status: Abholung geplant`]) },
+    { id: "bsp-r4", art: "artikel", nummer: `R-${j}-0880`, datum: d(30), lieferant: "bsp-l1", kunde: "", lieferschein: "LS 870001",
+      positionen: [{ artikelnummer: "4711230", bezeichnung: "Stichsäge 650 W", menge: 1 }], fehler: "Hubstange blockiert.",
+      pakete: 1, gewicht: "3", notiz: "", status: "erledigt", gutschrift: "Gutschrift GS-55120, 59,99 €", statusSeit: tag(4), erstellt: tag(30),
+      verlauf: verlauf([30, "Erfasst"], [29, "Status: Beim Lieferanten gemeldet"], [22, "Status: Abgeholt"], [6, "Status: Gutschrift / Ersatz erhalten – Gutschrift GS-55120, 59,99 €"], [4, "Status: Erledigt"]) },
+    { id: "bsp-p1", art: "reparatur", nummer: `RP-${j}-0401`, datum: d(2), lieferant: "bsp-l2", kunde: "Herr Mustermann", kundeTelefon: "0170 0000001", kundeEmail: "",
+      positionen: [{ artikelnummer: "6620500", bezeichnung: "Benzin-Rasenmäher 46 cm", menge: 1 }], seriennummer: "RM46-998812", kaufdatum: d(300), beleg: "Bon 4471",
+      garantie: "Garantie / Gewährleistung", kostenlimit: "", zubehoer: "Fangkorb", fehler: "Motor springt nicht an, Seilzug klemmt.",
+      pakete: 1, gewicht: "28", notiz: "", status: "gemeldet", statusSeit: tag(2), erstellt: tag(2),
+      verlauf: verlauf([2, "Erfasst"], [2, "Kundenbeleg gedruckt"], [2, "Status: Beim Lieferanten gemeldet – E-Mail geöffnet"]) },
+    { id: "bsp-p2", art: "reparatur", nummer: `RP-${j}-0398`, datum: d(18), lieferant: "bsp-l1", kunde: "Frau Musterfrau", kundeTelefon: "0151 0000002", kundeEmail: "kundin@example.com",
+      positionen: [{ artikelnummer: "4711500", bezeichnung: "Akku-Kettensäge 36 V", menge: 1 }], seriennummer: "KS36-120455", kaufdatum: d(500), beleg: "Bon 1180",
+      garantie: "Kostenpflichtig", kostenlimit: "60 €", zubehoer: "2 Akkus, Ladegerät", fehler: "Kette läuft nicht mehr an.",
+      pakete: 1, gewicht: "7", notiz: "", status: "kva", kva: "95 € – Motor tauschen", statusSeit: tag(3), erstellt: tag(18),
+      verlauf: verlauf([18, "Erfasst"], [17, "Status: Beim Lieferanten gemeldet"], [12, "Status: Abgeholt"], [3, "Status: Kostenvoranschlag – 95 € – Motor tauschen"]) },
+    { id: "bsp-p3", art: "reparatur", nummer: `RP-${j}-0390`, datum: d(26), lieferant: "bsp-l1", kunde: "Herr Beispielmann", kundeTelefon: "0160 0000003", kundeEmail: "",
+      positionen: [{ artikelnummer: "4711800", bezeichnung: "Bohrhammer 800 W", menge: 1 }], seriennummer: "BH8-77310", kaufdatum: d(200), beleg: "Bon 9902",
+      garantie: "Garantie / Gewährleistung", kostenlimit: "", zubehoer: "Koffer", fehler: "Schlagwerk ohne Funktion.",
+      pakete: 1, gewicht: "5", notiz: "", status: "zurueck", statusSeit: tag(2), erstellt: tag(26),
+      verlauf: verlauf([26, "Erfasst"], [25, "Status: Beim Lieferanten gemeldet"], [20, "Status: Abgeholt"], [2, "Status: Zurück im Markt"]) },
+  ];
+  // vorhandene Beispiele ersetzen, echte Einträge bleiben
+  stand.lieferanten = stand.lieferanten.filter(x => !x.id.startsWith("bsp-")).concat(L);
+  stand.reklamationen = stand.reklamationen.filter(x => !x.id.startsWith("bsp-")).concat(R);
+  speichere();
+}
+function loescheAlles() {
+  const firma = stand.einstellungen.firma;
+  stand = leererStand();
+  stand.einstellungen.firma = firma;
+  speichere();
+}

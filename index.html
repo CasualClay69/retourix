@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Retourix</title>
+  <meta name="theme-color" content="#d6001c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Retourix">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="bilder/icon-180.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/daten.js" defer></script>
+  <script src="js/beispiel.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="kopf">
+    <div class="marke"><span class="markeIcon">📦</span><div><b>Retourix <span class="version" id="version"></span></b><small id="firmaKopf"></small></div></div>
+    <nav class="reiter" id="reiter">
+      <button type="button" data-seite="uebersicht" class="an"><span>📋</span> Übersicht</button>
+      <button type="button" data-seite="neu"><span>➕</span> Neu</button>
+      <button type="button" data-seite="lieferanten"><span>🏭</span> Lieferanten</button>
+      <button type="button" data-seite="einstellungen"><span>⚙️</span> Einstellungen</button>
+    </nav>
+  </header>
+
+  <main id="inhalt"></main>
+
+  <!-- Hinweis unten -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Druckbereich für den Abholschein (nur beim Drucken sichtbar) -->
+  <div id="druck" class="druck"></div>
+</body>
+</html>
