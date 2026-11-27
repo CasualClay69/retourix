@@ -85,6 +85,7 @@ body.gesperrt .kopf, body.gesperrt main, body.gesperrt .fuss { display: none; }
 .tabelle.klein { box-shadow: none; margin: 10px 0; } .tabelle.klein td, .tabelle.klein th { padding: 6px 10px; }
 .status { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; color: var(--f); background: color-mix(in srgb, var(--f) 12%, white); white-space: nowrap; }
 .loeschZelle { width: 1%; text-align: right; }
+.tabelle td.nowrap { white-space: nowrap; }
 .tabelle tbody tr[data-detail] td:first-child { white-space: nowrap; }
 .status.gross { font-size: 0.95rem; padding: 5px 12px; }
 .alt { color: #c2410c; font-size: 0.8rem; font-weight: 700; }
