@@ -121,7 +121,7 @@ function zeichneFormular(id) {
     <form id="form" class="formular">
       <label>Datum<input type="date" name="datum" value="${esc(r?.datum || heute())}" required></label>
       <label>Lieferant<select name="lieferant" required>${stand.lieferanten.slice().sort((a, b) => a.name.localeCompare(b.name)).map(l => `<option value="${l.id}" ${r?.lieferant === l.id ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</select></label>
-      ${rep ? `<label>Reparaturnummer<input name="reparaturnummer" id="repNr" value="${esc(r?.reparaturnummer)}" placeholder="3681-xxxxxx-xxxx-xx" inputmode="numeric" autocomplete="off" maxlength="19" required></label>
+      ${rep ? `<label>Reparaturnummer<span class="repNrZeile"><input name="reparaturnummer" id="repNr" value="${esc(r?.reparaturnummer)}" placeholder="3681-xxxxxx-xxxx-xx" inputmode="numeric" autocomplete="off" maxlength="19" required><button type="button" class="knopf" id="repNrErzeugen" title="Neue Reparaturnummer erzeugen">🎲 Erzeugen</button></span></label>
         <fieldset class="breit kundeBox"><legend>👤 Kunde <small>(bleibt intern)</small></legend>
           <label>Name<input name="kunde" value="${esc(r?.kunde)}" required></label>
           <label>Telefon<input name="kundeTelefon" value="${esc(r?.kundeTelefon)}"></label>
@@ -149,6 +149,11 @@ function zeichneFormular(id) {
   const pos = $("positionen");
   $("plusPosition")?.addEventListener("click", () => { pos.insertAdjacentHTML("beforeend", positionZeile()); });
   // Reparaturnummer beim Tippen automatisch gliedern: 3681-xxxxxx-xxxx-xx
+  $("repNrErzeugen")?.addEventListener("click", () => {
+    const f = $("repNr");
+    if (f.value.trim() && !confirm("Die eingetragene Reparaturnummer ersetzen?")) return;
+    f.value = neueReparaturnummer(); f.focus();
+  });
   $("repNr")?.addEventListener("input", e => {
     const z = e.target.value.replace(/\D/g, "").slice(0, 16), teile = [z.slice(0, 4), z.slice(4, 10), z.slice(10, 14), z.slice(14, 16)].filter(Boolean);
     // nach 4, 10 und 14 Ziffern kommt der Strich von selbst (und ein getippter Strich bleibt stehen) – nur beim Löschen nicht
@@ -180,6 +185,15 @@ function zeichneFormular(id) {
     speichere(); meldung(`💾 ${ziel.nummer} gespeichert`); zeige("detail", ziel.id);
   });
   verdrahteLinks();
+}
+
+// Reparaturnummer nach Schema 3681-TTMMJJ-HHMM-ZZ (Datum, Uhrzeit, Zufallszahl 00–99), nie doppelt
+function neueReparaturnummer() {
+  const d = new Date(), z = n => String(n).padStart(2, "0");
+  const basis = `3681-${z(d.getDate())}${z(d.getMonth() + 1)}${z(d.getFullYear() % 100)}-${z(d.getHours())}${z(d.getMinutes())}`;
+  const vergeben = new Set(stand.reklamationen.map(r => r.nummer));
+  const frei = Array.from({ length: 100 }, (_, i) => `${basis}-${z(i)}`).filter(n => !vergeben.has(n));
+  return frei.length ? frei[Math.floor(Math.random() * frei.length)] : `${basis}-${z(Math.floor(Math.random() * 100))}`;
 }
 
 // ===================== VORLAGEN & MAIL =====================

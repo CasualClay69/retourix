@@ -125,6 +125,7 @@ dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; 
 .meldeweg legend { font-weight: 700; padding: 0 6px; font-size: 0.9rem; }
 .formular .meldeweg .wahl { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; } .meldeweg input { width: auto; }
 .formular .nurPortal { display: none; } .formular .knopf.nurEmail { display: inline-flex; } .formular.portalWeg .knopf.nurEmail { display: none; } .formular.portalWeg .nurPortal { display: grid; } .formular.portalWeg .nurEmail { display: none; }
+.repNrZeile { display: flex; gap: 6px; } .repNrZeile input { flex: 1; min-width: 0; } .repNrZeile .knopf { white-space: nowrap; padding: 8px 12px; }
 .kennwortZeile { display: flex; gap: 6px; } .kennwortZeile input { flex: 1; }
 .zugang { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; padding: 6px 10px; background: #f8fafc; border: 1px solid var(--rand); border-radius: 8px; }
 .zugang span { display: inline-flex; align-items: center; gap: 6px; } .zugang b { font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
