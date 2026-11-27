@@ -29,7 +29,7 @@ function zeige(s, id = null) {
 }
 function zeichne() {
   ({ uebersicht: zeichneUebersicht, neu: () => zeichneFormular(null), bearbeiten: () => zeichneFormular(detailId), detail: zeichneDetail,
-     lieferanten: zeichneLieferanten, einstellungen: zeichneEinstellungen })[seite]();
+     lieferanten: zeichneLieferanten, einstellungen: zeichneEinstellungen, auswertung: zeichneAuswertung })[seite]();
   beschrifteTabellen();
 }
 // Für die Handy-Ansicht: jede Zelle bekommt ihre Spaltenüberschrift (CSS zeigt die Zeilen dann als Karten)
@@ -68,6 +68,8 @@ function zeichneUebersicht() {
     .sort((a, b) => (b.erstellt || "").localeCompare(a.erstellt || ""));
   $("inhalt").innerHTML = `
     ${!stand.lieferanten.length ? `<div class="hinweisBox">👋 Willkommen! Lege zuerst unter <a href="#" data-geh="lieferanten">🏭 Lieferanten</a> deine Lieferanten an.<div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf klein" id="bspLaden">🧪 Erst mal ausprobieren: Beispieldaten laden</button></div></div>` : ""}
+    ${autoStatus === "pausiert" ? `<div class="hinweisBox sicherungHinweis">💾 <b>Automatische Sicherung pausiert</b> – der Browser braucht einmal deine Erlaubnis, in die Datei „${esc(autoGriff?.name || "")}“ zu schreiben.
+      <div class="knoepfe" style="margin-top:8px"><button type="button" class="knopf haupt klein" id="autoFortsetzen">▶️ Fortsetzen</button></div></div>` : sicherungsHinweis()}
     ${erin.length ? `<div class="hinweisBox warnung">⏰ <b>Bitte kümmern:</b><ul class="erinnerung">${erin.map(x => `<li><a href="#" data-detail="${x.r.id}">${ARTEN[artVon(x.r)].icon} ${esc(x.r.nummer)}</a> – ${esc(x.text)}</li>`).join("")}</ul></div>` : ""}
     <div class="neuKnoepfe">
       <button type="button" class="knopf haupt gross" data-geh="neu" data-art="artikel">📦 Neue Retoure <small>${offenAnz("artikel")} offen</small></button>
@@ -88,6 +90,8 @@ function zeichneUebersicht() {
     </tbody></table>` : `<p class="leer">${stand.reklamationen.length ? "Nichts in dieser Ansicht." : "Noch nichts erfasst."}</p>`}`;
   $("suche").addEventListener("input", e => { suche = e.target.value; const pos = e.target.selectionStart; zeichneUebersicht(); const s = $("suche"); s.focus(); s.setSelectionRange(pos, pos); });
   beschrifteTabellen();
+  $("sicherungJetzt")?.addEventListener("click", async () => { await sicherungJetzt(); meldung("💾 Sicherung gespeichert"); zeichneUebersicht(); });
+  $("autoFortsetzen")?.addEventListener("click", async () => { const ok = await autoSicherungFortsetzen(); meldung(ok ? "💾 Automatische Sicherung läuft wieder" : "Ohne Erlaubnis geht es nicht.", ok ? "" : "fehler"); zeichneUebersicht(); });
   for (const b of document.querySelectorAll("[data-loeschen]")) b.addEventListener("click", e => {
     e.stopPropagation();
     const r = reklamation(b.dataset.loeschen); if (!r) return;
@@ -463,6 +467,15 @@ function zeichneEinstellungen() {
       <div class="knoepfe"><button type="button" class="knopf haupt" id="export">⬇️ Sicherung speichern</button><label class="knopf">⬆️ Sicherung laden<input type="file" id="import" accept=".json" hidden></label>
         <button type="button" class="knopf" id="csv">📊 Alles als Excel-Liste (CSV)</button></div>
       <small>${stand.reklamationen.length} Vorgänge · ${stand.lieferanten.length} Lieferanten${stand.letzteSicherung ? ` · letzte Sicherung: ${new Date(stand.letzteSicherung).toLocaleString("de-DE")}` : " · noch keine Sicherung gespeichert"}</small></section>
+    <section class="karte"><h3>🔁 Automatische Sicherung</h3>
+      ${!autoMoeglich() ? `<p>Auf diesem Gerät bzw. in diesem Browser nicht möglich (z. B. iPhone oder Firefox). Nutze hier „💾 Sicherung speichern“.</p>`
+      : autoStatus === "aus" ? `<p>Retourix speichert jede Änderung automatisch in eine Datei deiner Wahl – z. B. auf dem USB-Stick oder einem Netzlaufwerk. ${verschluesselt() ? "Die Datei ist mit deinem Kennwort verschlüsselt." : "<b>Hinweis:</b> Ohne eingeschaltete Verschlüsselung stehen die Daten lesbar in der Datei."}</p>
+          <button type="button" class="knopf haupt" id="autoEin">📁 Datei wählen und einschalten</button>`
+      : autoStatus === "pausiert" ? `<p>⏸️ <b>Pausiert</b> – der Browser braucht deine Erlaubnis für „${esc(autoGriff?.name || "")}“.</p>
+          <div class="knoepfe"><button type="button" class="knopf haupt" id="autoWeiter">▶️ Fortsetzen</button><button type="button" class="knopf" id="autoAus">Ausschalten</button></div>`
+      : `<p class="kryptoAn">✅ Speichert automatisch in <b>${esc(autoGriff?.name || "")}</b>${autoZeit() ? ` · zuletzt: ${new Date(autoZeit()).toLocaleString("de-DE")}` : ""}</p>${autoFehler ? `<p class="warn">⚠️ ${esc(autoFehler)}</p>` : ""}
+          <div class="knoepfe"><button type="button" class="knopf" id="autoJetzt">💾 Jetzt speichern</button><button type="button" class="knopf" id="autoAus">Ausschalten</button></div>`}
+      <small class="leerKlein">Laden kannst du diese Datei wie jede Sicherung über „⬆️ Sicherung laden“.</small></section>
     <section class="karte gefahrZone"><h3>⚠️ Alle Daten löschen</h3>
       <p>Löscht <b>alles</b> auf diesem Gerät: alle Retouren und Reparaturen (auch offene), alle Lieferanten, alle PDF-Dokumente und die Einstellungen. Das geht nicht rückgängig – speichere vorher eine Sicherung, falls du die Daten noch brauchst.</p>
       <button type="button" class="knopf gefahr" id="allesLoeschen">🗑️ Alle Daten löschen</button></section>`;
@@ -516,13 +529,14 @@ ${stand.reklamationen.length} Vorgänge, ${stand.lieferanten.length} Lieferanten
     stand.reklamationen = stand.reklamationen.filter(r => !ids.has(r.id)); speichere();
     meldung(`🧹 ${weg.length} alte Vorgänge gelöscht`); zeichneEinstellungen();
   });
-  $("export").addEventListener("click", async () => {
-    stand.letzteSicherung = new Date().toISOString(); speichere();
-    const dateien = await alleDateienFuerSicherung(), text = JSON.stringify({ ...stand, dateien }, null, 1);
-    if (verschluesselt()) ladeHerunter(`retourix-sicherung-${heute()}-verschluesselt.json`, JSON.stringify(await paketPacken(krypto.schluessel, krypto.salz, krypto.iter, text)), "application/json");
-    else ladeHerunter(`retourix-sicherung-${heute()}.json`, text, "application/json");
+  $("export").addEventListener("click", async () => { await sicherungJetzt(); zeichneEinstellungen(); });
+  $("autoEin")?.addEventListener("click", async () => {
+    try { await autoSicherungEinrichten(); meldung("💾 Automatische Sicherung eingeschaltet"); } catch (e) { if (e?.name !== "AbortError") meldung("Das ging nicht – bitte eine andere Datei wählen.", "fehler"); }
     zeichneEinstellungen();
   });
+  $("autoJetzt")?.addEventListener("click", async () => { await autoSchreiben(); meldung(autoFehler || "💾 Gespeichert", autoFehler ? "fehler" : ""); zeichneEinstellungen(); });
+  $("autoWeiter")?.addEventListener("click", async () => { await autoSicherungFortsetzen(); zeichneEinstellungen(); });
+  $("autoAus")?.addEventListener("click", async () => { await autoSicherungAus(); meldung("Automatische Sicherung ausgeschaltet"); zeichneEinstellungen(); });
   $("import").addEventListener("change", async ev => {
     const datei = ev.target.files[0]; if (!datei) return;
     try {
@@ -554,7 +568,7 @@ async function aktualisiere() {
   try {
     const t = await (await fetch("js/daten.js", { cache: "reload" })).text();
     const neu = (t.match(/VERSION = "([^"]+)"/) || [])[1];
-    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/krypto.js", "js/beispiel.js", "js/dateien.js", "js/app.js", "manifest.json"]
+    await Promise.all(["./", "index.html", "css/style.css", "js/daten.js", "js/krypto.js", "js/beispiel.js", "js/dateien.js", "js/sicherung.js", "js/auswertung.js", "js/app.js", "manifest.json"]
       .map(d => fetch(d, { cache: "reload" }).catch(() => null)));
     if (neu && neu !== VERSION) { meldung(`✨ Neue Version ${neu} wird geladen …`); setTimeout(() => location.reload(), 900); }
     else { meldung(`✅ Retourix ist aktuell (v${VERSION})`); knopf.disabled = false; knopf.textContent = "🔄 Aktualisieren"; }
@@ -627,5 +641,6 @@ function losGehts() {
   $("sperrKnopf").hidden = !verschluesselt();
   letzteAktivitaet = Date.now();
   zeichne();
+  autoSicherungStart().then(() => { if (["uebersicht", "einstellungen"].includes(seite)) zeichne(); });
 }
 document.addEventListener("DOMContentLoaded", start);
