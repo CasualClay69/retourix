@@ -98,14 +98,17 @@ textarea { resize: vertical; } input:focus, select:focus, textarea:focus { outli
 .formular { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
 .formular label { display: grid; gap: 4px; font-weight: 600; font-size: 0.9rem; } .formular label small { font-weight: 400; color: var(--grau); }
 .formular .breit { grid-column: 1 / -1; }
-.position { display: grid; grid-template-columns: 1fr 2fr 90px 36px; gap: 8px; margin: 6px 0; }
+.position { display: grid; grid-template-columns: 1fr 2fr 90px 36px; grid-template-areas: "nr bez menge weg" "lief ean . ."; gap: 8px; margin: 6px 0 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--rand); }
+.position .pArtnr { grid-area: nr; } .position .pBez { grid-area: bez; } .position .pMenge { grid-area: menge; } .position .weg { grid-area: weg; }
+.position .pLiefNr { grid-area: lief; } .position .pEan { grid-area: ean; }
+@media (max-width: 700px) { .position { grid-template-columns: 1fr 1fr 70px 36px; grid-template-areas: "bez bez bez weg" "nr nr menge menge" "lief lief ean ean"; } }
 .position .weg { border: 1px solid var(--rand); border-radius: 8px; background: #fff; cursor: pointer; color: #b91c1c; }
 .platzhalter { columns: 2; font-size: 0.85rem; } code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; }
 
 /* ----- Detail ----- */
 .detailKopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
 .detailKopf h2 { margin: 0 0 6px; }
-.spalten { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.spalten { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .spalten > * { min-width: 0; }
 dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; } dt { color: var(--grau); } dd { margin: 0; font-weight: 600; }
 .fehlerText { background: #fef2f2; border-radius: 8px; padding: 10px; } .notiz { background: #fffbeb; border-radius: 8px; padding: 10px; }
 .schritt { border-left: 3px solid var(--rand); padding: 6px 0 10px 12px; margin-bottom: 6px; display: grid; gap: 6px; }
@@ -161,6 +164,7 @@ dl { display: grid; grid-template-columns: 140px 1fr; gap: 4px 10px; margin: 0; 
   .tabelle:not(.klein) td:first-child { grid-column: 1 / -1; font-size: 1.05rem; }
   .tabelle:not(.klein) td:first-child::before { display: none; }
   .tabelle:not(.klein) td:empty { display: none; }
+  .tabelle.klein { display: block; overflow-x: auto; }
   .tabelle:not(.klein) td:last-child:not([data-l]) { grid-column: 1 / -1; }
   .tabelle:not(.klein) td.loeschZelle { width: auto; text-align: right; border-top: 1px solid #f1f2f4; padding-top: 6px; }
   .detailKopf .knoepfe { width: 100%; } .detailKopf .knoepfe .knopf { flex: 1; justify-content: center; }

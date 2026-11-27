@@ -86,7 +86,7 @@ function zeichneAuswertung() {
         <td>${tageText(schnitt(l.abhol))}</td><td>${tageText(schnitt(l.dauern))}</td><td>${l.gs ? euro(l.gs) : "–"}</td></tr>`).join("")}</tbody></table>
       <small class="leerKlein">„Ø bis Abholung“: vom Melden beim Lieferanten bis zur Abholung. „Ø bis Abschluss“: von der Erfassung bis erledigt / ausgegeben. Gutschriften: Beträge aus dem Gutschrift-Feld (z. B. „49,90 €“).</small></section>
     ${artikel.length ? `<section class="karte"><h3>📦 Häufigste Artikel / Geräte</h3>
-      <table class="tabelle"><thead><tr><th>Bezeichnung</th><th>Artikelnr.</th><th>Vorgänge</th><th>Stück</th></tr></thead><tbody>
+      <table class="tabelle"><thead><tr><th>Bezeichnung</th><th>Fawis</th><th>Vorgänge</th><th>Stück</th></tr></thead><tbody>
       ${artikel.map(a => `<tr><td><b>${esc(a.bez || "–")}</b></td><td>${esc(a.nr || "–")}</td><td>${a.vorgaenge}</td><td>${a.stueck}</td></tr>`).join("")}</tbody></table></section>` : ""}
     <section class="karte"><h3>📅 Nach Monat</h3>
       <table class="tabelle"><thead><tr><th>Monat</th><th>Retouren</th><th>Reparaturen</th><th>Gesamt</th></tr></thead><tbody>
